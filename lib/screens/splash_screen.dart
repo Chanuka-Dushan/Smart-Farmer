@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/l10n.dart';
+import '../services/l10n_extension.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,10 +15,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Navigate to Onboarding after 3 seconds
-    Timer(const Duration(seconds: 3), () {
+    _checkLanguageSelection();
+  }
+
+  Future<void> _checkLanguageSelection() async {
+    await Future.delayed(const Duration(seconds: 3));
+    
+    final prefs = await SharedPreferences.getInstance();
+    final languageSelected = prefs.getBool('language_selected') ?? false;
+    
+    if (!mounted) return;
+    
+    if (languageSelected) {
       Navigator.pushReplacementNamed(context, '/onboarding');
-    });
+    } else {
+      Navigator.pushReplacementNamed(context, '/language');
+    }
   }
 
   @override
@@ -33,9 +48,9 @@ class _SplashScreenState extends State<SplashScreen> {
               color: Color(0xFF2E7D32),
             ),
             const SizedBox(height: 20),
-            const Text(
-              "Smart Farmer",
-              style: TextStyle(
+            Text(
+              context.tr('app_name'),
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2E7D32),
@@ -43,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              "AI-Powered Spare Part Management",
+              context.tr('app_subtitle'),
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],

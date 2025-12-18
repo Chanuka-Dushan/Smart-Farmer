@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config/app_config.dart';
+import '../services/l10n.dart';
+import '../services/l10n_extension.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,8 +21,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     setState(() => _isLoading = true);
     
-    // REPLACE WITH YOUR COMPUTER'S IP ADDRESS
-    final url = Uri.parse('http://10.172.174.175:8000/register'); 
+    // Using environment variable for API URL
+    final url = Uri.parse(AppConfig.registerUrl); 
 
     try {
       final response = await http.post(
@@ -35,18 +38,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (response.statusCode == 200) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Account Created! Please Login.")),
+          SnackBar(content: Text(context.tr('account_created'))),
         );
         Navigator.pop(context); // Go back to login
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Registration Failed")),
+          SnackBar(content: Text(context.tr('registration_failed'))),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        SnackBar(content: Text("${context.tr('error')}: $e")),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -56,38 +59,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Create Account")),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
+      appBar: AppBar(title: Text(context.tr('create_account'))),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: "Full Name",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person),
+              decoration: InputDecoration(
+                labelText: context.tr('full_name'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.person),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
+              decoration: InputDecoration(
+                labelText: context.tr('email'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.email),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
+              decoration: InputDecoration(
+                labelText: context.tr('password'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock),
               ),
             ),
             const SizedBox(height: 24),
@@ -100,18 +104,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text("REGISTER"),
+                    child: Text(context.tr('register')),
                   ),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/login');
               },
-              child: const Text("Already have an account? Login"),
+              child: Text(context.tr('already_have_account')),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
+    ),
     );
   }
 }

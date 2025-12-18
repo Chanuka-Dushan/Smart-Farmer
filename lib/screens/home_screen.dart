@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'camera_scan_screen.dart';
+import 'predict_screen.dart';
+import 'scan_screen.dart';
+import 'supplier_screen.dart';
+import '../services/l10n.dart';
+import '../services/l10n_extension.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,13 +19,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Smart Farmer Dashboard"),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: Text(context.tr('dashboard')),
+        backgroundColor: const Color(0xFF2E7D32), // Agri Green
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications), // For WhatsApp alerts
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(context.tr('no_new_notifications'))),
+              );
+            },
+            icon: const Icon(Icons.notifications),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+            icon: const Icon(Icons.settings),
           ),
         ],
       ),
@@ -31,82 +45,111 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Section
-            const Text(
-              "Hello, Farmer!",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              context.tr('hello_farmer'),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const Text("Your machinery status is currently Good."),
+            Text(context.tr('machinery_status_good')),
             const SizedBox(height: 20),
 
-            // 1. Predictive Analytics Card (Feature 1)
-            _buildFeatureCard(
-              context,
-              title: "Lifespan Forecast",
-              subtitle: "Check remaining hours for your parts",
-              icon: Icons.timelapse,
-              color: Colors.orange.shade100,
-              iconColor: Colors.orange,
-            ),
-            
-            // 2. Camera Scan Card (Feature 2)
-            _buildFeatureCard(
-              context,
-              title: "Scan Spare Part",
-              subtitle: "Detect wear & tear instantly",
-              icon: Icons.camera_enhance,
-              color: Colors.blue.shade100,
-              iconColor: Colors.blue,
+            // --- 1. Predictive Analytics Card ---
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PredictScreen()),
+                );
+              },
+              child: _buildFeatureCard(
+                context,
+                title: context.tr('lifespan_forecast'),
+                subtitle: context.tr('check_remaining_hours'),
+                icon: Icons.timelapse,
+                color: Colors.orange.shade100,
+                iconColor: Colors.orange,
+              ),
             ),
 
-            // 3. Supplier Map Card (Feature 3)
-            _buildFeatureCard(
-              context,
-              title: "Find Suppliers",
-              subtitle: "Locate verified sellers nearby",
-              icon: Icons.map,
-              color: Colors.green.shade100,
-              iconColor: Colors.green,
+            // --- 2. Camera Scan Card ---
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ScanScreen()),
+                );
+              },
+              child: _buildFeatureCard(
+                context,
+                title: context.tr('scan_spare_part'),
+                subtitle: context.tr('detect_wear_tear'),
+                icon: Icons.camera_enhance,
+                color: Colors.blue.shade100,
+                iconColor: Colors.blue,
+              ),
             ),
-            
-            // 4. Blockchain Card (Feature 4)
-             _buildFeatureCard(
-              context,
-              title: "My Reservations",
-              subtitle: "View secure blockchain contracts",
-              icon: Icons.qr_code,
-              color: Colors.purple.shade100,
-              iconColor: Colors.purple,
+
+            // --- 3. Supplier Map Card ---
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SupplierScreen()),
+                );
+              },
+              child: _buildFeatureCard(
+                context,
+                title: context.tr('find_suppliers'),
+                subtitle: context.tr('locate_verified_sellers'),
+                icon: Icons.map,
+                color: Colors.green.shade100,
+                iconColor: Colors.green,
+              ),
+            ),
+
+            // --- 4. Blockchain Card ---
+            GestureDetector(
+              onTap: () {
+                // Placeholder for now
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('blockchain_coming_soon'))),
+                );
+              },
+              child: _buildFeatureCard(
+                context,
+                title: "My Reservations",
+                subtitle: "View secure blockchain contracts",
+                icon: Icons.qr_code,
+                color: Colors.purple.shade100,
+                iconColor: Colors.purple,
+              ),
             ),
           ],
         ),
       ),
-      
-      // Bottom Navigation for easy access
+
+      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
+        selectedItemColor: const Color(0xFF2E7D32),
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
           });
-          
-          // Navigate to camera when scan is clicked
+
+          // Navigate to Scan Screen if middle button is pressed
           if (index == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const CameraScanScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const ScanScreen()),
             ).then((_) {
-              // Reset to home after returning from camera
-              setState(() {
-                _selectedIndex = 0;
-              });
+              // Reset tab to Home when coming back
+              setState(() => _selectedIndex = 0);
             });
           }
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.camera), label: "Scan"),
+          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: "Scan"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),

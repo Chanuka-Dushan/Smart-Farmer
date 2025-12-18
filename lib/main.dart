@@ -1,13 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/language_selection_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/camera_scan_screen.dart';
+import 'screens/settings_screen.dart';
+import 'services/l10n.dart';
+import 'services/theme_service.dart';
 
-void main() {
-  runApp(const SmartSparePartApp());
+Future<void> main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
+  // Initialize L10n singleton and load language preference
+  final l10n = L10n();
+  await l10n.loadLanguage();
+  
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeService()),
+        ChangeNotifierProvider.value(value: l10n),
+      ],
+      child: const SmartSparePartApp(),
+    ),
+  );
 }
 
 class SmartSparePartApp extends StatelessWidget {
@@ -15,28 +39,25 @@ class SmartSparePartApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeService = Provider.of<ThemeService>(context);
+    
     return MaterialApp(
       title: 'Smart Farmer Spare Parts',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        // Agricultural Color Palette
-        primaryColor: const Color(0xFF2E7D32), // Agri Green
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
-          secondary: const Color(0xFF1565C0), // Tech Blue
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto', // Default font
-      ),
+      theme: themeService.lightTheme,
+      darkTheme: themeService.darkTheme,
+      themeMode: themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       // Define Routes for easy navigation
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
+        '/language': (context) => const LanguageSelectionScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),   
         '/register': (context) => const RegisterScreen(),
         '/camera': (context) => const CameraScanScreen(),
+        '/settings': (context) => const SettingsScreen(),
       },
     );
   }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
+import '../services/l10n.dart';
+import '../services/l10n_extension.dart';
 
 class CameraScanScreen extends StatefulWidget {
   const CameraScanScreen({super.key});
@@ -24,11 +27,22 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
 
   Future<void> _initializeCamera() async {
     try {
+      // Request camera permission
+      final status = await Permission.camera.request();
+      
+      if (status.isDenied || status.isPermanentlyDenied) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('camera_error'))),
+        );
+        return;
+      }
+
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("No camera found")),
+          SnackBar(content: Text(context.tr('no_camera_found'))),
         );
         return;
       }
@@ -48,7 +62,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Camera error: $e")),
+        SnackBar(content: Text("${context.tr('camera_error')}: $e")),
       );
     }
   }
@@ -74,7 +88,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
       setState(() => _isProcessing = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Capture failed: $e")),
+        SnackBar(content: Text("${context.tr('capture_failed')}: $e")),
       );
     }
   }
@@ -82,7 +96,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
   void _showImagePreview(XFile image) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -95,20 +109,20 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
                   TextButton(
                     onPressed: () {
                       setState(() => _capturedImage = null);
-                      Navigator.pop(context);
+                      Navigator.pop(dialogContext);
                     },
-                    child: const Text("Retake"),
+                    child: Text(context.tr('retake')),
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.pop(dialogContext);
                       _analyzeImage(image);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2E7D32),
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text("Analyze"),
+                    child: Text(context.tr('analyze')),
                   ),
                 ],
               ),
@@ -124,9 +138,9 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     // For now, just show a success message
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Analyzing spare part... (Backend integration pending)"),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.tr('analyzing_spare_part')),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -142,7 +156,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Scan Spare Part"),
+        title: Text(context.tr('wear_detection')),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
