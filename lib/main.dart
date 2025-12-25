@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import '../utils/firebase_helper.dart';
 import 'screens/splash_screen.dart';
 import 'screens/language_selection_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -11,6 +14,7 @@ import 'screens/camera_scan_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/l10n.dart';
 import 'services/theme_service.dart';
+import 'providers/auth_provider.dart';
 
 Future<void> main() async {
   // Ensure Flutter is initialized
@@ -18,6 +22,14 @@ Future<void> main() async {
   
   // Load environment variables
   await dotenv.load(fileName: ".env");
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Initialize FCM
+  await FirebaseHelper.initialize();
   
   // Initialize L10n singleton and load language preference
   final l10n = L10n();
@@ -28,6 +40,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeService()),
         ChangeNotifierProvider.value(value: l10n),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: const SmartSparePartApp(),
     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'predict_screen.dart';
 import 'scan_screen.dart';
 import 'supplier_screen.dart';
+import 'profile_screen.dart';
 import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 
@@ -141,6 +142,16 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ScanScreen()),
+            ).then((_) {
+              // Reset tab to Home when coming back
+              setState(() => _selectedIndex = 0);
+            });
+          }
+          // Navigate to Profile Screen if profile button is pressed
+          else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
             ).then((_) {
               // Reset tab to Home when coming back
               setState(() => _selectedIndex = 0);
