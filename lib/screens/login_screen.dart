@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -61,12 +61,16 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                const Icon(Icons.agriculture, size: 80, color: Color(0xFF2E7D32)),
+                Icon(Icons.agriculture, size: 80, color: Theme.of(context).primaryColor),
                 const SizedBox(height: 20),
                 Text(
                   context.tr('welcome_back'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 28, 
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.headlineLarge?.color,
+                  ),
                 ),
                 const SizedBox(height: 40),
                 TextFormField(

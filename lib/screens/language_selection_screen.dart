@@ -53,25 +53,25 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
               const SizedBox(height: 40),
-              const Icon(
+              Icon(
                 Icons.language,
                 size: 80,
-                color: Color(0xFF2E7D32),
+                color: Theme.of(context).primaryColor,
               ),
               const SizedBox(height: 24),
               Text(
                 context.tr('select_language'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2E7D32),
+                  color: Theme.of(context).textTheme.headlineLarge?.color,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -96,11 +96,13 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                          color: isSelected ? Theme.of(context).primaryColor : Theme.of(context).dividerColor,
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        color: isSelected ? const Color(0xFF2E7D32).withOpacity(0.1) : Colors.white,
+                        color: isSelected 
+                          ? Theme.of(context).primaryColor.withOpacity(0.1) 
+                          : Theme.of(context).cardColor,
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

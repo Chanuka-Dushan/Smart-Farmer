@@ -99,6 +99,28 @@ class TranslateEN {
     'logout_confirm': 'Are you sure you want to logout?',
     'cancel': 'Cancel',
     
+    // PROFILE SCREEN
+    'profile': 'Profile',
+    'first_name': 'First Name',
+    'last_name': 'Last Name',
+    'update_profile': 'Update Profile',
+    'change_password': 'Change Password',
+    'old_password': 'Old Password',
+    'new_password': 'New Password',
+    'please_enter_first_name': 'Please enter your first name',
+    'please_enter_last_name': 'Please enter your last name',
+    'please_enter_old_password': 'Please enter your old password',
+    'please_enter_new_password': 'Please enter a new password',
+    'password_too_short': 'Password must be at least 6 characters',
+    'update_failed': 'Update failed',
+    'password_changed': 'Password changed successfully!',
+    'password_change_failed': 'Password change failed',
+    'delete_account': 'Delete Account',
+    'delete_account_confirmation': 'Are you sure you want to delete your account? This action cannot be undone.',
+    'delete_failed': 'Account deletion failed',
+    'delete': 'Delete',
+    'change': 'Change',
+    
     // COMMON
     'get_started': 'Get Started',
     'skip': 'Skip',

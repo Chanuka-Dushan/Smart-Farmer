@@ -99,6 +99,28 @@ class TranslateSI {
     'logout_confirm': 'ඔබට ඉවත්ව යාමට අවශ්‍ය බව විශ්වාසද?',
     'cancel': 'අවලංගු කරන්න',
     
+    // PROFILE SCREEN
+    'profile': 'පැතිකඩ',
+    'first_name': 'මුල් නම',
+    'last_name': 'අවසන් නම',
+    'update_profile': 'පැතිකඩ යාවත්කාලීන කරන්න',
+    'change_password': 'මුරපදය වෙනස් කරන්න',
+    'old_password': 'පැරණි මුරපදය',
+    'new_password': 'නව මුරපදය',
+    'please_enter_first_name': 'කරුණාකර ඔබේ මුල් නම ඇතුළත් කරන්න',
+    'please_enter_last_name': 'කරුණාකර ඔබේ අවසන් නම ඇතුළත් කරන්න',
+    'please_enter_old_password': 'කරුණාකර ඔබේ පැරණි මුරපදය ඇතුළත් කරන්න',
+    'please_enter_new_password': 'කරුණාකර නව මුරපදයක් ඇතුළත් කරන්න',
+    'password_too_short': 'මුරපදය අවම වශයෙන් අක්ෂර 6 ක් විය යුතුය',
+    'update_failed': 'යාවත්කාලීන කිරීම අසාර්ථකයි',
+    'password_changed': 'මුරපදය සාර්ථකව වෙනස් කරන ලදී!',
+    'password_change_failed': 'මුරපදය වෙනස් කිරීම අසාර්ථකයි',
+    'delete_account': 'ගිණුම මකන්න',
+    'delete_account_confirmation': 'ඔබට ඔබේ ගිණුම මකා දැමීමට අවශ්‍ය බව විශ්වාසද? මෙම ක්‍රියාව අවලංගු කළ නොහැක.',
+    'delete_failed': 'ගිණුම මකාදැමීම අසාර්ථකයි',
+    'delete': 'මකන්න',
+    'change': 'වෙනස් කරන්න',
+    
     // COMMON
     'get_started': 'ආරම්භ කරන්න',
     'skip': 'මඟහරින්න',

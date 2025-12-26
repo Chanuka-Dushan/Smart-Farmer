@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -137,8 +136,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   // Next / Get Started Button
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (_currentPage == _onboardingData.length - 1) {
+                        // Mark onboarding as completed
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('onboarding_completed', true);
                         Navigator.pushReplacementNamed(context, '/login');
                       } else {
                         _controller.nextPage(

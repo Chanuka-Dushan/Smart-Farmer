@@ -16,11 +16,11 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   AuthProvider() {
-    _checkAuthStatus();
+    checkAuthStatus();
   }
 
   /// Check if user is already authenticated
-  Future<void> _checkAuthStatus() async {
+  Future<void> checkAuthStatus() async {
     _isAuthenticated = await _apiService.isAuthenticated();
     if (_isAuthenticated) {
       try {

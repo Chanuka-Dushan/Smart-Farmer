@@ -99,6 +99,28 @@ class TranslateTA {
     'logout_confirm': 'நீங்கள் நிச்சயமாக வெளியேற விரும்புகிறீர்களா?',
     'cancel': 'ரத்துசெய்',
     
+    // PROFILE SCREEN
+    'profile': 'சுயவிவரம்',
+    'first_name': 'முதல் பெயர்',
+    'last_name': 'கடைசி பெயர்',
+    'update_profile': 'சுயவிவரத்தை புதுப்பிக்கவும்',
+    'change_password': 'கடவுச்சொல்லை மாற்றவும்',
+    'old_password': 'பழைய கடவுச்சொல்',
+    'new_password': 'புதிய கடவுச்சொல்',
+    'please_enter_first_name': 'தயவுசெய்து உங்கள் முதல் பெயரை உள்ளிடவும்',
+    'please_enter_last_name': 'தயவுசெய்து உங்கள் கடைசி பெயரை உள்ளிடவும்',
+    'please_enter_old_password': 'தயவுசெய்து உங்கள் பழைய கடவுச்சொல்லை உள்ளிடவும்',
+    'please_enter_new_password': 'தயவுசெய்து புதிய கடவுச்சொல்லை உள்ளிடவும்',
+    'password_too_short': 'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்',
+    'update_failed': 'புதுப்பித்தல் தோல்வியடைந்தது',
+    'password_changed': 'கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது!',
+    'password_change_failed': 'கடவுச்சொல் மாற்றம் தோல்வியடைந்தது',
+    'delete_account': 'கணக்கை நீக்கு',
+    'delete_account_confirmation': 'உங்கள் கணக்கை நீக்க விரும்புகிறீர்களா? இந்த செயல் செயல்தவிர்க்க முடியாது.',
+    'delete_failed': 'கணக்கு நீக்கம் தோல்வியடைந்தது',
+    'delete': 'நீக்கு',
+    'change': 'மாற்று',
+    
     // COMMON
     'get_started': 'தொடங்குங்கள்',
     'skip': 'தவிர்க்கவும்',
