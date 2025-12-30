@@ -86,7 +86,9 @@ class TranslateEN {
     // SETTINGS SCREEN
     'settings': 'Settings',
     'profile_information': 'Profile Information',
-    'phone_number': 'Phone Number',
+    'phone': 'Phone',
+    'optional': 'Optional',
+    'password_min_length': 'Minimum 6 characters',
     'language': 'Language',
     'app_settings': 'App Settings',
     'notifications': 'Notifications',

@@ -86,7 +86,9 @@ class TranslateTA {
     // SETTINGS SCREEN
     'settings': 'அமைப்புகள்',
     'profile_information': 'சுயவிவர தகவல்',
-    'phone_number': 'தொலைபேசி எண்',
+    'phone': 'தொலைபேசி',
+    'optional': 'விருப்ப',
+    'password_min_length': 'குறைந்தது 6 எழுத்துகள்',
     'language': 'மொழி',
     'app_settings': 'பயன்பாட்டு அமைப்புகள்',
     'notifications': 'அறிவிப்புகள்',

@@ -40,6 +40,12 @@ class AuthProvider with ChangeNotifier {
     required String password,
     String? phoneNumber,
     String? address,
+    String? userType,
+    String? businessName,
+    String? businessAddress,
+    double? latitude,
+    double? longitude,
+    String? shopLocationName,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -63,6 +69,12 @@ class AuthProvider with ChangeNotifier {
         phoneNumber: phoneNumber,
         address: address,
         fcmToken: fcmToken,
+        userType: userType,
+        businessName: businessName,
+        businessAddress: businessAddress,
+        latitude: latitude,
+        longitude: longitude,
+        shopLocationName: shopLocationName,
       );
 
       _user = authResponse.user;
