@@ -27,6 +27,7 @@ class AuthProvider with ChangeNotifier {
         _user = await _apiService.getProfile();
       } catch (e) {
         _isAuthenticated = false;
+        _user = null;
       }
     }
     notifyListeners();
@@ -52,12 +53,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Get FCM token for push notifications
       String? fcmToken;
       try {
         fcmToken = await FirebaseMessaging.instance.getToken();
       } catch (e) {
-        // Firebase not initialized or unavailable, continue without token
         debugPrint('FCM token not available: $e');
       }
 
@@ -77,7 +76,7 @@ class AuthProvider with ChangeNotifier {
         shopLocationName: shopLocationName,
       );
 
-      _user = authResponse.user;
+      _user = authResponse.user is User ? authResponse.user : User.fromJson(authResponse.user);
       _isAuthenticated = true;
       _isLoading = false;
       notifyListeners();
@@ -105,8 +104,90 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      _user = authResponse.user;
+      _user = authResponse.user is User ? authResponse.user : User.fromJson(authResponse.user);
       _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Social login
+  Future<bool> socialLogin({
+    required String email,
+    required String firstname,
+    required String lastname,
+    required String socialId,
+    required String provider,
+    String? profilePictureUrl,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      String? fcmToken;
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } catch (e) {
+        debugPrint('FCM token not available: $e');
+      }
+
+      final authResponse = await _apiService.socialLogin(
+        email: email,
+        firstname: firstname,
+        lastname: lastname,
+        socialId: socialId,
+        provider: provider,
+        profilePictureUrl: profilePictureUrl,
+        fcmToken: fcmToken,
+      );
+
+      _user = authResponse.user is User ? authResponse.user : User.fromJson(authResponse.user);
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Forgot password
+  Future<bool> forgotPassword(String email) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.forgotPassword(email);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Reset password
+  Future<bool> resetPassword(String token, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.resetPassword(token, newPassword);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -144,6 +225,7 @@ class AuthProvider with ChangeNotifier {
     String? lastname,
     String? phoneNumber,
     String? address,
+    String? profilePictureUrl,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -155,7 +237,46 @@ class AuthProvider with ChangeNotifier {
         lastname: lastname,
         phoneNumber: phoneNumber,
         address: address,
+        profilePictureUrl: profilePictureUrl,
       );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Upload profile picture
+  Future<bool> uploadProfilePicture(String filePath) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _user = await _apiService.uploadProfilePicture(filePath);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Delete profile picture
+  Future<bool> deleteProfilePicture() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _user = await _apiService.deleteProfilePicture();
       _isLoading = false;
       notifyListeners();
       return true;

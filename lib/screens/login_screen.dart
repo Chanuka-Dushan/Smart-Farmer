@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
 
@@ -42,6 +44,80 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text(authProvider.errorMessage ?? context.tr('invalid_email_password')),
           backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Function to handle social login
+  Future<void> _handleSocialLogin(String provider) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Connecting to $provider...')),
+    );
+
+    try {
+      String? email;
+      String? firstName;
+      String? lastName;
+      String? socialId;
+      String? profilePic;
+
+      if (provider == 'google') {
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) return; // User cancelled
+
+        email = googleUser.email;
+        final nameParts = googleUser.displayName?.split(' ') ?? ['Social', 'User'];
+        firstName = nameParts.first;
+        lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : 'Google';
+        socialId = googleUser.id;
+        profilePic = googleUser.photoUrl;
+      } else {
+        final LoginResult result = await FacebookAuth.instance.login();
+        if (result.status != LoginStatus.success) {
+          throw Exception('Facebook login failed: ${result.message}');
+        }
+
+        final userData = await FacebookAuth.instance.getUserData();
+        email = userData['email'];
+        firstName = userData['name']?.split(' ').first ?? 'Social';
+        lastName = userData['name']?.split(' ').last ?? 'Facebook';
+        socialId = userData['id'];
+        profilePic = userData['picture']?['data']?['url'];
+      }
+
+      final success = await authProvider.socialLogin(
+        email: email ?? "user_${provider}@example.com",
+        firstname: firstName ?? "Social",
+        lastname: lastName ?? provider.toUpperCase(),
+        socialId: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        provider: provider,
+        // profilePictureUrl: profilePic, // Backend update might be needed for this field in SocialLoginRequest
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Social login failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Social login error: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
         ),
       );
     }
@@ -126,6 +202,46 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
+                    // Navigate to forgot password screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                    );
+                  },
+                  child: Text(context.tr('forgot_password')),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(context.tr('or_continue_with'), style: TextStyle(color: Colors.grey[600])),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _socialButton(
+                      icon: Icons.g_mobiledata,
+                      color: Colors.red,
+                      label: 'Google',
+                      onPressed: () => _handleSocialLogin('google'),
+                    ),
+                    _socialButton(
+                      icon: Icons.facebook,
+                      color: Colors.blue[800]!,
+                      label: 'Facebook',
+                      onPressed: () => _handleSocialLogin('facebook'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: () {
                     Navigator.pushNamed(context, '/register');
                   },
                   child: Text(context.tr('dont_have_account')),
@@ -134,6 +250,173 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _socialButton({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _emailController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isSent = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(context.tr('forgot_password'))),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: _isSent ? _buildSuccess() : _buildForm(),
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.tr('enter_email_to_reset'),
+            style: const TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 24),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              labelText: context.tr('email'),
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.email),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return context.tr('please_enter_email');
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                final success = await Provider.of<AuthProvider>(context, listen: false)
+                    .forgotPassword(_emailController.text.trim());
+                if (success) {
+                  setState(() => _isSent = true);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('failed_to_send_reset'))),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: Text(context.tr('send_reset_token')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccess() {
+    final tokenController = TextEditingController();
+    final passwordController = TextEditingController();
+    final resetFormKey = GlobalKey<FormState>();
+
+    return Form(
+      key: resetFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.mark_email_read, size: 80, color: Colors.green),
+          const SizedBox(height: 16),
+          Text(
+            context.tr('reset_token_sent'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          TextFormField(
+            controller: tokenController,
+            decoration: InputDecoration(
+              labelText: context.tr('enter_token'),
+              border: const OutlineInputBorder(),
+            ),
+            validator: (value) => value!.isEmpty ? context.tr('please_enter_token') : null,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: InputDecoration(
+              labelText: context.tr('new_password'),
+              border: const OutlineInputBorder(),
+            ),
+            validator: (value) => value!.length < 6 ? context.tr('password_too_short') : null,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () async {
+              if (resetFormKey.currentState!.validate()) {
+                final success = await Provider.of<AuthProvider>(context, listen: false)
+                    .resetPassword(tokenController.text, passwordController.text);
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('password_reset_success'))),
+                  );
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('invalid_token'))),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: Text(context.tr('reset_password')),
+          ),
+        ],
       ),
     );
   }

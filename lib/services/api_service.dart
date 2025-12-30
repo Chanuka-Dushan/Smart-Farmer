@@ -98,6 +98,81 @@ class ApiService {
     }
   }
 
+  /// Social login (Google/Facebook)
+  Future<AuthResponse> socialLogin({
+    required String email,
+    required String firstname,
+    required String lastname,
+    required String socialId,
+    required String provider,
+    String? profilePictureUrl,
+    String? fcmToken,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/users/social-login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'firstname': firstname,
+          'lastname': lastname,
+          'social_id': socialId,
+          'provider': provider,
+          if (profilePictureUrl != null) 'profile_picture_url': profilePictureUrl,
+          if (fcmToken != null) 'fcm_token': fcmToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final authResponse = AuthResponse.fromJson(jsonDecode(response.body));
+        await storage.write(key: 'auth_token', value: authResponse.accessToken);
+        await storage.write(key: 'user_id', value: (authResponse.user as Map)['id'].toString());
+        return authResponse;
+      } else {
+        throw Exception('Social login failed: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Forgot password - request token
+  Future<void> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/users/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to request password reset: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Reset password with token
+  Future<void> resetPassword(String token, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/users/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'token': token,
+          'new_password': newPassword,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to reset password: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Logout user (clear local storage)
   Future<void> logout() async {
     await storage.delete(key: 'auth_token');
@@ -140,6 +215,7 @@ class ApiService {
     String? lastname,
     String? phoneNumber,
     String? address,
+    String? profilePictureUrl,
     String? fcmToken,
   }) async {
     try {
@@ -153,6 +229,7 @@ class ApiService {
       if (lastname != null) body['lastname'] = lastname;
       if (phoneNumber != null) body['phone_number'] = phoneNumber;
       if (address != null) body['address'] = address;
+      if (profilePictureUrl != null) body['profile_picture_url'] = profilePictureUrl;
       if (fcmToken != null) body['fcm_token'] = fcmToken;
 
       final response = await http.put(
@@ -165,13 +242,65 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
-        return User.fromJson(result['user']);
+        return User.fromJson(jsonDecode(response.body));
       } else if (response.statusCode == 401) {
         await logout();
         throw Exception('Session expired. Please login again.');
       } else {
         throw Exception('Failed to update profile: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Upload profile picture
+  Future<User> uploadProfilePicture(String filePath) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) {
+        throw Exception('Not authenticated. Please login.');
+      }
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/users/me/profile-picture'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return User.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception('Failed to upload profile picture: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete profile picture
+  Future<User> deleteProfilePicture() async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) {
+        throw Exception('Not authenticated. Please login.');
+      }
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/users/me/profile-picture'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return User.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception('Failed to delete profile picture: ${response.body}');
       }
     } catch (e) {
       rethrow;

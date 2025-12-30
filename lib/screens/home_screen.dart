@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'predict_screen.dart';
 import 'scan_screen.dart';
 import 'supplier_screen.dart';
 import 'profile_screen.dart';
 import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,155 +20,311 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String _greeting = "";
+  String _weatherTemp = "--";
+  String _weatherDescription = "Loading weather...";
+  String _locationName = "Detecting location...";
+  IconData _weatherIcon = Icons.wb_cloudy_outlined;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateGreeting();
+    _loadLocationAndWeather();
+  }
+
+  void _updateGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      _greeting = "Good Morning";
+    } else if (hour >= 12 && hour < 17) {
+      _greeting = "Good Afternoon";
+    } else if (hour >= 17 && hour < 21) {
+      _greeting = "Good Evening";
+    } else {
+      _greeting = "Good Night";
+    }
+  }
+
+  Future<void> _loadLocationAndWeather() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _locationName = "Location denied";
+            _weatherDescription = "Enable GPS";
+          });
+          return;
+        }
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+      );
+
+      final weatherResponse = await http.get(Uri.parse(
+          'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true'));
+
+      final geoResponse = await http.get(Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=10'));
+
+      if (weatherResponse.statusCode == 200) {
+        final weatherData = json.decode(weatherResponse.body);
+        final current = weatherData['current_weather'];
+        final temp = current['temperature'];
+        final code = current['weathercode'];
+
+        String desc;
+        IconData icon;
+        if (code == 0) { desc = "Clear Sky"; icon = Icons.wb_sunny_rounded; }
+        else if (code <= 3) { desc = "Cloudy"; icon = Icons.wb_cloudy_rounded; }
+        else if (code <= 67) { desc = "Rainy"; icon = Icons.umbrella_rounded; }
+        else { desc = "Cloudy"; icon = Icons.cloud_rounded; }
+
+        String cityName = "My Farm";
+        if (geoResponse.statusCode == 200) {
+          final geoData = json.decode(geoResponse.body);
+          cityName = geoData['address']['city'] ?? geoData['address']['town'] ?? geoData['address']['village'] ?? "Nearby";
+        }
+
+        if (mounted) {
+          setState(() {
+            _weatherTemp = "${temp.round()}°C";
+            _weatherDescription = desc;
+            _weatherIcon = icon;
+            _locationName = cityName;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _locationName = "Sri Lanka";
+          _weatherDescription = "Weather error";
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.tr('dashboard')),
-        backgroundColor: const Color(0xFF2E7D32), // Agri Green
+        title: Text(
+          context.tr('dashboard'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.tr('no_new_notifications'))),
-              );
-            },
-            icon: const Icon(Icons.notifications),
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_outlined),
           ),
           IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings');
-            },
-            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+            icon: const Icon(Icons.settings_outlined),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Section
-            Text(
-              context.tr('hello_farmer'),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            Text(context.tr('machinery_status_good')),
-            const SizedBox(height: 20),
-
-            // --- 1. Predictive Analytics Card ---
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PredictScreen()),
+            // --- Greeting & Weather Section (Animated) ---
+            TweenAnimationBuilder(
+              duration: const Duration(milliseconds: 800),
+              tween: Tween<double>(begin: 0, end: 1),
+              builder: (context, double value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: child,
+                  ),
                 );
               },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "$_greeting,",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                            ),
+                          ),
+                          Consumer<AuthProvider>(
+                            builder: (context, auth, _) => Text(
+                              auth.user?.firstname ?? context.tr('hello_farmer'),
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(_weatherIcon, color: Colors.blueAccent, size: 22),
+                            const SizedBox(width: 8),
+                            Text(
+                              _weatherTemp,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 14, color: Colors.redAccent),
+                      const SizedBox(width: 4),
+                      Text(
+                        _locationName,
+                        style: TextStyle(fontSize: 14, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                      ),
+                      const SizedBox(width: 12),
+                      Icon(Icons.cloud_queue, size: 14, color: Colors.blueGrey[400]),
+                      const SizedBox(width: 4),
+                      Text(
+                        _weatherDescription,
+                        style: TextStyle(fontSize: 14, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // --- Feature Cards ---
+            _buildAnimatedCard(
+              index: 1,
               child: _buildFeatureCard(
                 context,
                 title: context.tr('lifespan_forecast'),
                 subtitle: context.tr('check_remaining_hours'),
-                icon: Icons.timelapse,
-                color: Colors.orange.shade100,
+                icon: Icons.auto_graph_rounded,
+                color: Colors.orange.withOpacity(0.1),
                 iconColor: Colors.orange,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PredictScreen())),
               ),
             ),
 
-            // --- 2. Camera Scan Card ---
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ScanScreen()),
-                );
-              },
+            _buildAnimatedCard(
+              index: 2,
               child: _buildFeatureCard(
                 context,
                 title: context.tr('scan_spare_part'),
                 subtitle: context.tr('detect_wear_tear'),
-                icon: Icons.camera_enhance,
-                color: Colors.blue.shade100,
+                icon: Icons.document_scanner_rounded,
+                color: Colors.blue.withOpacity(0.1),
                 iconColor: Colors.blue,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ScanScreen())),
               ),
             ),
 
-            // --- 3. Supplier Map Card ---
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SupplierScreen()),
-                );
-              },
+            _buildAnimatedCard(
+              index: 3,
               child: _buildFeatureCard(
                 context,
                 title: context.tr('find_suppliers'),
                 subtitle: context.tr('locate_verified_sellers'),
-                icon: Icons.map,
-                color: Colors.green.shade100,
+                icon: Icons.map_rounded,
+                color: Colors.green.withOpacity(0.1),
                 iconColor: Colors.green,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SupplierScreen())),
               ),
             ),
 
-            // --- 4. Blockchain Card ---
-            GestureDetector(
-              onTap: () {
-                // Placeholder for now
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(context.tr('blockchain_coming_soon'))),
-                );
-              },
+            _buildAnimatedCard(
+              index: 4,
               child: _buildFeatureCard(
                 context,
                 title: "My Reservations",
                 subtitle: "View secure blockchain contracts",
-                icon: Icons.qr_code,
-                color: Colors.purple.shade100,
+                icon: Icons.vpn_key_rounded,
+                color: Colors.purple.withOpacity(0.1),
                 iconColor: Colors.purple,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('blockchain_coming_soon'))),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-
-      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         selectedItemColor: const Color(0xFF2E7D32),
+        unselectedItemColor: Colors.grey,
+        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-
-          // Navigate to Scan Screen if middle button is pressed
+          setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ScanScreen()),
-            ).then((_) {
-              // Reset tab to Home when coming back
-              setState(() => _selectedIndex = 0);
-            });
-          }
-          // Navigate to Profile Screen if profile button is pressed
-          else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
-            ).then((_) {
-              // Reset tab to Home when coming back
-              setState(() => _selectedIndex = 0);
-            });
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const ScanScreen()))
+                .then((_) => setState(() => _selectedIndex = 0));
+          } else if (index == 2) {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()))
+                .then((_) => setState(() => _selectedIndex = 0));
           }
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: "Scan"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.camera_alt_rounded), label: "Scan"),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profile"),
         ],
       ),
+    );
+  }
+
+  Widget _buildAnimatedCard({required int index, required Widget child}) {
+    return TweenAnimationBuilder(
+      duration: Duration(milliseconds: 400 + (index * 150)),
+      tween: Tween<double>(begin: 0, end: 1),
+      builder: (context, double value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 30 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 
@@ -172,51 +333,55 @@ class _HomeScreenState extends State<HomeScreen> {
       required String subtitle,
       required IconData icon,
       required Color color,
-      required Color iconColor}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
+      required Color iconColor,
+      required VoidCallback onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF252525) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, size: 30, color: iconColor),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-              ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 30, color: iconColor),
             ),
-          ),
-          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 import '../services/l10n_extension.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -36,6 +38,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.uploadProfilePicture(image.path);
+      
+      if (!mounted) return;
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Upload failed')),
+        );
+      }
+    }
   }
 
   Future<void> _updateProfile() async {
@@ -76,7 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(context.tr('change_password')),
         content: Form(
           key: formKey,
@@ -120,13 +139,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 final authProvider = Provider.of<AuthProvider>(context, listen: false);
                 final success = await authProvider.changePassword(
                   oldPassword: oldPasswordController.text,
@@ -162,17 +181,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _confirmDeleteAccount() async {
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(context.tr('delete_account')),
         content: Text(context.tr('delete_account_confirmation')),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
               final success = await authProvider.deleteAccount();
 
@@ -233,13 +252,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Center(
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: const Color(0xFF2E7D32),
-                          child: Text(
-                            user.firstname[0].toUpperCase() + user.lastname[0].toUpperCase(),
-                            style: const TextStyle(fontSize: 32, color: Colors.white),
-                          ),
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: const Color(0xFF2E7D32),
+                              backgroundImage: user.profilePictureUrl != null 
+                                ? NetworkImage('${ApiService().baseUrl}${user.profilePictureUrl}') 
+                                : null,
+                              child: user.profilePictureUrl == null 
+                                ? Text(
+                                    user.firstname[0].toUpperCase() + user.lastname[0].toUpperCase(),
+                                    style: const TextStyle(fontSize: 32, color: Colors.white),
+                                  ) 
+                                : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: InkWell(
+                                onTap: _pickImage,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [BoxShadow(blurRadius: 5, color: Colors.black26)],
+                                  ),
+                                  child: const Icon(Icons.camera_alt, color: Color(0xFF2E7D32), size: 20),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -250,6 +294,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           user.email,
                           style: const TextStyle(fontSize: 16, color: Colors.grey),
                         ),
+                        if (user.profilePictureUrl != null)
+                          TextButton(
+                            onPressed: () => authProvider.deleteProfilePicture(),
+                            child: Text(context.tr('remove_picture'), style: const TextStyle(color: Colors.red, fontSize: 12)),
+                          ),
                       ],
                     ),
                   ),

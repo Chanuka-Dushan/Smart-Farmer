@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlong;
 import 'package:geolocator/geolocator.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
 import '../services/api_service.dart';
@@ -590,6 +592,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(context.tr('or_continue_with'), style: TextStyle(color: Colors.grey[600])),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _socialButton(
+                      icon: Icons.g_mobiledata,
+                      color: Colors.red,
+                      label: 'Google',
+                      onPressed: () => _handleSocialLogin('google'),
+                    ),
+                    _socialButton(
+                      icon: Icons.facebook,
+                      color: Colors.blue[800]!,
+                      label: 'Facebook',
+                      onPressed: () => _handleSocialLogin('facebook'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
@@ -602,5 +633,99 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
+  }
+  Widget _socialButton({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSocialLogin(String provider) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Connecting to $provider...')),
+    );
+
+    try {
+      String? email;
+      String? firstName;
+      String? lastName;
+      String? socialId;
+
+      if (provider == 'google') {
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) return; // User cancelled
+
+        email = googleUser.email;
+        final nameParts = googleUser.displayName?.split(' ') ?? ['Social', 'User'];
+        firstName = nameParts.first;
+        lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : 'Google';
+        socialId = googleUser.id;
+      } else {
+        final LoginResult result = await FacebookAuth.instance.login();
+        if (result.status != LoginStatus.success) {
+          throw Exception('Facebook login failed: ${result.message}');
+        }
+
+        final userData = await FacebookAuth.instance.getUserData();
+        email = userData['email'];
+        firstName = userData['name']?.split(' ').first ?? 'Social';
+        lastName = userData['name']?.split(' ').last ?? 'Facebook';
+        socialId = userData['id'];
+      }
+
+      final success = await authProvider.socialLogin(
+        email: email ?? "user_${provider}@example.com",
+        firstname: firstName ?? "Social",
+        lastname: lastName ?? provider.toUpperCase(),
+        socialId: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        provider: provider,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Social login failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Social login registration error: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 }
