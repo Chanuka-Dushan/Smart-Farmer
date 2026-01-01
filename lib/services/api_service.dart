@@ -23,11 +23,6 @@ class ApiService {
     String? address,
     String? fcmToken,
     String? userType,
-    String? businessName,
-    String? businessAddress,
-    double? latitude,
-    double? longitude,
-    String? shopLocationName,
   }) async {
     try {
       final response = await http.post(
@@ -42,11 +37,6 @@ class ApiService {
           if (address != null) 'address': address,
           if (fcmToken != null) 'fcm_token': fcmToken,
           if (userType != null) 'user_type': userType,
-          if (businessName != null) 'business_name': businessName,
-          if (businessAddress != null) 'business_address': businessAddress,
-          if (latitude != null) 'latitude': latitude,
-          if (longitude != null) 'longitude': longitude,
-          if (shopLocationName != null) 'shop_location_name': shopLocationName,
         }),
       );
 
@@ -72,6 +62,9 @@ class ApiService {
     required String password,
   }) async {
     try {
+      print('🔐 Attempting login for: $email');
+      print('🌐 API URL: $baseUrl/api/users/login');
+      
       final response = await http.post(
         Uri.parse('$baseUrl/api/users/login'),
         headers: {'Content-Type': 'application/json'},
@@ -81,10 +74,16 @@ class ApiService {
         }),
       );
 
+      print('📡 Response status: ${response.statusCode}');
+      print('📦 Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final authResponse = AuthResponse.fromJson(jsonDecode(response.body));
         await storage.write(key: 'auth_token', value: authResponse.accessToken);
-        await storage.write(key: 'user_id', value: authResponse.user.id.toString());
+        await storage.write(key: 'user_id', value: authResponse.user['id'].toString());
+        final userType = authResponse.user['user_type'] ?? 'buyer';
+        await storage.write(key: 'user_type', value: userType);
+        print('✅ Login successful for user type: $userType');
         return authResponse;
       } else if (response.statusCode == 401) {
         throw Exception('Invalid email or password');
@@ -94,6 +93,10 @@ class ApiService {
         throw Exception('Login failed: ${response.body}');
       }
     } catch (e) {
+      print('❌ Login error: $e');
+      if (e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
+        throw Exception('Network error. Please check your internet connection.');
+      }
       rethrow;
     }
   }
@@ -107,6 +110,7 @@ class ApiService {
     required String provider,
     String? profilePictureUrl,
     String? fcmToken,
+    String? userType,
   }) async {
     try {
       final response = await http.post(
@@ -120,6 +124,7 @@ class ApiService {
           'provider': provider,
           if (profilePictureUrl != null) 'profile_picture_url': profilePictureUrl,
           if (fcmToken != null) 'fcm_token': fcmToken,
+          if (userType != null) 'user_type': userType,
         }),
       );
 
@@ -127,6 +132,7 @@ class ApiService {
         final authResponse = AuthResponse.fromJson(jsonDecode(response.body));
         await storage.write(key: 'auth_token', value: authResponse.accessToken);
         await storage.write(key: 'user_id', value: (authResponse.user as Map)['id'].toString());
+        await storage.write(key: 'user_type', value: userType ?? 'buyer');
         return authResponse;
       } else {
         throw Exception('Social login failed: ${response.body}');
@@ -177,6 +183,7 @@ class ApiService {
   Future<void> logout() async {
     await storage.delete(key: 'auth_token');
     await storage.delete(key: 'user_id');
+    await storage.delete(key: 'user_type');
   }
 
   // ==================== Profile Management ====================
@@ -496,53 +503,6 @@ class ApiService {
     }
   }
 
-  /// Update seller profile
-  Future<Seller> updateSellerProfile({
-    String? businessName,
-    String? ownerFirstname,
-    String? ownerLastname,
-    String? phoneNumber,
-    String? businessAddress,
-    String? businessDescription,
-    String? fcmToken,
-  }) async {
-    try {
-      final token = await storage.read(key: 'auth_token');
-      if (token == null) {
-        throw Exception('Not authenticated. Please login.');
-      }
-
-      final body = <String, dynamic>{};
-      if (businessName != null) body['business_name'] = businessName;
-      if (ownerFirstname != null) body['owner_firstname'] = ownerFirstname;
-      if (ownerLastname != null) body['owner_lastname'] = ownerLastname;
-      if (phoneNumber != null) body['phone_number'] = phoneNumber;
-      if (businessAddress != null) body['business_address'] = businessAddress;
-      if (businessDescription != null) body['business_description'] = businessDescription;
-      if (fcmToken != null) body['fcm_token'] = fcmToken;
-
-      final response = await http.put(
-        Uri.parse('$baseUrl/api/sellers/me'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
-        return Seller.fromJson(result);
-      } else if (response.statusCode == 401) {
-        await logout();
-        throw Exception('Session expired. Please login again.');
-      } else {
-        throw Exception('Failed to update profile: ${response.body}');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
 
   /// Change seller password
   Future<void> changeSellerPassword({
@@ -627,6 +587,141 @@ class ApiService {
     }
   }
 
+  /// Upload seller logo
+  Future<Seller> uploadSellerLogo(String filePath) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) {
+        throw Exception('Not authenticated. Please login.');
+      }
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/sellers/me/logo'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return Seller.fromJson(result);
+      } else {
+        throw Exception('Failed to upload logo: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete seller logo
+  Future<Seller> deleteSellerLogo() async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/sellers/me/logo'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return Seller.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception('Failed to delete logo: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Complete seller onboarding
+  Future<Seller> completeSellerOnboarding({
+    required String businessName,
+    required String businessAddress,
+    required String latitude,
+    required String longitude,
+    String? logoPath,
+  }) async {
+    try {
+      // 1. Update location and name
+      final seller = await updateSellerProfile(
+        businessName: businessName,
+        businessAddress: businessAddress,
+      );
+      
+      await updateSellerLocation(
+        latitude: latitude,
+        longitude: longitude,
+      );
+
+      // 2. Upload logo if provided
+      if (logoPath != null) {
+        await uploadSellerLogo(logoPath);
+      }
+
+      // 3. Mark as completed
+      return await updateSellerProfile(onboarding_completed: true);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update seller profile (corrected parameter name)
+  Future<Seller> updateSellerProfile({
+    String? businessName,
+    String? ownerFirstname,
+    String? ownerLastname,
+    String? phoneNumber,
+    String? businessAddress,
+    String? businessDescription,
+    String? fcmToken,
+    bool? onboarding_completed,
+  }) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) {
+        throw Exception('Not authenticated. Please login.');
+      }
+
+      final body = <String, dynamic>{};
+      if (businessName != null) body['business_name'] = businessName;
+      if (ownerFirstname != null) body['owner_firstname'] = ownerFirstname;
+      if (ownerLastname != null) body['owner_lastname'] = ownerLastname;
+      if (phoneNumber != null) body['phone_number'] = phoneNumber;
+      if (businessAddress != null) body['business_address'] = businessAddress;
+      if (businessDescription != null) body['business_description'] = businessDescription;
+      if (fcmToken != null) body['fcm_token'] = fcmToken;
+      if (onboarding_completed != null) body['onboarding_completed'] = onboarding_completed;
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/sellers/me'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return Seller.fromJson(result);
+      } else if (response.statusCode == 401) {
+        await logout();
+        throw Exception('Session expired. Please login again.');
+      } else {
+        throw Exception('Failed to update profile: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Get all shop locations for map display
   Future<List<ShopLocation>> getShopLocations() async {
     try {
@@ -640,6 +735,194 @@ class ApiService {
         return data.map((json) => ShopLocation.fromJson(json)).toList();
       } else {
         throw Exception('Failed to load shop locations: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==================== Spare Parts ====================
+
+  /// Create a new spare part request
+  Future<Map<String, dynamic>> createSparePartRequest({
+    required String title,
+    required String description,
+  }) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/spare-parts/requests'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'title': title,
+          'description': description,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to create request: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Upload image for spare part request
+  Future<Map<String, dynamic>> uploadSparePartImage(int requestId, String filePath) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/spare-parts/requests/$requestId/image'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to upload image: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get seller's spare part requests
+  Future<List<dynamic>> getSparePartRequests() async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/spare-parts/requests'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load requests: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Submit an offer for a request
+  Future<Map<String, dynamic>> submitSparePartOffer({
+    required int requestId,
+    required String price,
+    required String description,
+  }) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/spare-parts/requests/$requestId/offers'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'price': price,
+          'description': description,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to submit offer: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get user's own requests
+  Future<List<dynamic>> getMySparePartRequests() async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/spare-parts/my-requests'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load my requests: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get offers for a request
+  Future<List<dynamic>> getOffersForRequest(int requestId) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/spare-parts/requests/$requestId/offers'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load offers: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update offer status
+  Future<Map<String, dynamic>> updateOfferStatus(int offerId, String status) async {
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/spare-parts/offers/$offerId/status'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'status': status}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to update status: ${response.body}');
       }
     } catch (e) {
       rethrow;

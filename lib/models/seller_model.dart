@@ -10,6 +10,8 @@ class Seller {
   final String? latitude;
   final String? longitude;
   final String? shopLocationName;
+  final String? logoUrl;
+  final bool onboardingCompleted;
   final bool isVerified;
   final bool isActive;
   final DateTime createdAt;
@@ -27,6 +29,8 @@ class Seller {
     this.latitude,
     this.longitude,
     this.shopLocationName,
+    this.logoUrl,
+    required this.onboardingCompleted,
     required this.isVerified,
     required this.isActive,
     required this.createdAt,
@@ -46,6 +50,8 @@ class Seller {
       latitude: json['latitude'],
       longitude: json['longitude'],
       shopLocationName: json['shop_location_name'],
+      logoUrl: json['logo_url'],
+      onboardingCompleted: json['onboarding_completed'] ?? false,
       isVerified: json['is_verified'] ?? false,
       isActive: json['is_active'] ?? true,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
@@ -66,6 +72,8 @@ class Seller {
       'latitude': latitude,
       'longitude': longitude,
       'shop_location_name': shopLocationName,
+      'logo_url': logoUrl,
+      'onboarding_completed': onboardingCompleted,
       'is_verified': isVerified,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),

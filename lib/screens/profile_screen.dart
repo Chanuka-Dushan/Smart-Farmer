@@ -14,21 +14,39 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  
+  // Common fields
   late TextEditingController _firstnameController;
   late TextEditingController _lastnameController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
+  
+  // Seller specific
+  late TextEditingController _businessNameController;
+  late TextEditingController _descriptionController;
 
   @override
   void initState() {
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
-
-    _firstnameController = TextEditingController(text: user?.firstname ?? '');
-    _lastnameController = TextEditingController(text: user?.lastname ?? '');
-    _phoneController = TextEditingController(text: user?.phoneNumber ?? '');
-    _addressController = TextEditingController(text: user?.address ?? '');
+    
+    if (authProvider.isSeller) {
+      final seller = authProvider.seller;
+      _firstnameController = TextEditingController(text: seller?.ownerFirstname ?? '');
+      _lastnameController = TextEditingController(text: seller?.ownerLastname ?? '');
+      _phoneController = TextEditingController(text: seller?.phoneNumber ?? '');
+      _addressController = TextEditingController(text: seller?.businessAddress ?? '');
+      _businessNameController = TextEditingController(text: seller?.businessName ?? '');
+      _descriptionController = TextEditingController(text: seller?.businessDescription ?? '');
+    } else {
+      final user = authProvider.user;
+      _firstnameController = TextEditingController(text: user?.firstname ?? '');
+      _lastnameController = TextEditingController(text: user?.lastname ?? '');
+      _phoneController = TextEditingController(text: user?.phoneNumber ?? '');
+      _addressController = TextEditingController(text: user?.address ?? '');
+      _businessNameController = TextEditingController();
+      _descriptionController = TextEditingController();
+    }
   }
 
   @override
@@ -37,6 +55,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _lastnameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _businessNameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -61,27 +81,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    bool success;
 
-    final success = await authProvider.updateProfile(
-      firstname: _firstnameController.text.trim(),
-      lastname: _lastnameController.text.trim(),
-      phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-    );
+    if (authProvider.isSeller) {
+      success = await authProvider.updateSellerProfile(
+        businessName: _businessNameController.text.trim(),
+        ownerFirstname: _firstnameController.text.trim(),
+        ownerLastname: _lastnameController.text.trim(),
+        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        businessAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+        businessDescription: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+      );
+    } else {
+      success = await authProvider.updateProfile(
+        firstname: _firstnameController.text.trim(),
+        lastname: _lastnameController.text.trim(),
+        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+      );
+    }
 
     if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('profile_updated')),
+          content: Text(context.l10n.tr('profile_updated')),
           backgroundColor: Colors.green,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? context.tr('update_failed')),
+          content: Text(authProvider.errorMessage ?? context.l10n.tr('update_failed')),
           backgroundColor: Colors.red,
         ),
       );
@@ -157,14 +189,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(context.tr('password_changed')),
+                      content: Text(context.l10n.tr('password_changed')),
                       backgroundColor: Colors.green,
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(authProvider.errorMessage ?? context.tr('password_change_failed')),
+                      content: Text(authProvider.errorMessage ?? context.l10n.tr('password_change_failed')),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -198,11 +230,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (!mounted) return;
 
               if (success) {
-                Navigator.pushReplacementNamed(context, '/login');
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(authProvider.errorMessage ?? context.tr('delete_failed')),
+                    content: Text(authProvider.errorMessage ?? context.l10n.tr('delete_failed')),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -228,18 +260,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
               await authProvider.logout();
               if (!mounted) return;
-              Navigator.pushReplacementNamed(context, '/login');
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             },
           ),
         ],
       ),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
+          final isSeller = authProvider.isSeller;
           final user = authProvider.user;
+          final seller = authProvider.seller;
 
-          if (user == null) {
+          if (!isSeller && user == null) {
             return const Center(child: CircularProgressIndicator());
           }
+          if (isSeller && seller == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final String displayName = isSeller ? seller!.businessName : user!.fullName;
+          final String email = isSeller ? seller!.email : user!.email;
+          final String? picUrl = isSeller ? seller!.logoUrl : user!.profilePictureUrl;
+          final String initials = isSeller 
+            ? (seller!.businessName.isNotEmpty ? seller.businessName.substring(0, 1).toUpperCase() : "S")
+            : ((user!.firstname.isNotEmpty ? user.firstname[0] : "") + (user.lastname.isNotEmpty ? user.lastname[0] : "")).toUpperCase();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -257,12 +301,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             CircleAvatar(
                               radius: 50,
                               backgroundColor: const Color(0xFF2E7D32),
-                              backgroundImage: user.profilePictureUrl != null 
-                                ? NetworkImage('${ApiService().baseUrl}${user.profilePictureUrl}') 
+                              backgroundImage: picUrl != null 
+                                ? NetworkImage(picUrl.startsWith('http') ? picUrl : '${ApiService().baseUrl}$picUrl') 
                                 : null,
-                              child: user.profilePictureUrl == null 
+                              child: picUrl == null 
                                 ? Text(
-                                    user.firstname[0].toUpperCase() + user.lastname[0].toUpperCase(),
+                                    initials,
                                     style: const TextStyle(fontSize: 32, color: Colors.white),
                                   ) 
                                 : null,
@@ -287,14 +331,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          user.fullName,
+                          displayName,
                           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          user.email,
+                          email,
                           style: const TextStyle(fontSize: 16, color: Colors.grey),
                         ),
-                        if (user.profilePictureUrl != null)
+                        if (picUrl != null)
                           TextButton(
                             onPressed: () => authProvider.deleteProfilePicture(),
                             child: Text(context.tr('remove_picture'), style: const TextStyle(color: Colors.red, fontSize: 12)),
@@ -305,36 +349,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 32),
 
                   // Edit Form
-                  TextFormField(
-                    controller: _firstnameController,
-                    decoration: InputDecoration(
-                      labelText: context.tr('first_name'),
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.person),
+                  if (isSeller) ...[
+                    TextFormField(
+                      controller: _businessNameController,
+                      decoration: InputDecoration(
+                        labelText: context.tr('business_name'),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.storefront),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return context.tr('please_enter_business_name');
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return context.tr('please_enter_first_name');
-                      }
-                      return null;
-                    },
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _firstnameController,
+                          decoration: InputDecoration(
+                            labelText: isSeller ? context.tr('owner_first_name') : context.tr('first_name'),
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.person),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return context.tr('please_enter_first_name');
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _lastnameController,
+                          decoration: InputDecoration(
+                            labelText: isSeller ? context.tr('owner_last_name') : context.tr('last_name'),
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.person_outline),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return context.tr('please_enter_last_name');
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _lastnameController,
-                    decoration: InputDecoration(
-                      labelText: context.tr('last_name'),
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.person_outline),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return context.tr('please_enter_last_name');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                  
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
@@ -345,15 +416,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  
                   TextFormField(
                     controller: _addressController,
                     maxLines: 2,
                     decoration: InputDecoration(
-                      labelText: context.tr('address'),
+                      labelText: isSeller ? context.tr('business_address') : context.tr('address'),
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.location_on),
                     ),
                   ),
+                  
+                  if (isSeller) ...[
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: context.tr('business_description'),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.description),
+                      ),
+                    ),
+                  ],
+                  
                   const SizedBox(height: 24),
 
                   // Update Button
@@ -365,6 +451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundColor: const Color(0xFF2E7D32),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: Text(context.tr('update_profile')),
                         ),
@@ -377,6 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: Text(context.tr('change_password')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   const SizedBox(height: 32),

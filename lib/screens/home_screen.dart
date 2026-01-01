@@ -8,6 +8,7 @@ import 'supplier_screen.dart';
 import 'profile_screen.dart';
 import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
+import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -29,8 +30,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkOnboarding();
+    });
     _updateGreeting();
     _loadLocationAndWeather();
+  }
+
+  void _checkOnboarding() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.isSeller && auth.seller != null && !auth.seller!.onboardingCompleted) {
+      Navigator.pushReplacementNamed(context, '/seller-onboarding');
+    }
   }
 
   void _updateGreeting() {
@@ -64,45 +75,54 @@ class _HomeScreenState extends State<HomeScreen> {
         desiredAccuracy: LocationAccuracy.low,
       );
 
+      // Explicitly request Celsius to avoid any region-based defaults
       final weatherResponse = await http.get(Uri.parse(
-          'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true'));
+          'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true&temperature_unit=celsius'));
 
-      final geoResponse = await http.get(Uri.parse(
-          'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=10'));
+      // Nominatim requires a User-Agent identifying the app
+      final geoResponse = await http.get(
+        Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=10'),
+        headers: {'User-Agent': 'SmartFarmerApp/1.0'},
+      );
 
       if (weatherResponse.statusCode == 200) {
         final weatherData = json.decode(weatherResponse.body);
         final current = weatherData['current_weather'];
-        final temp = current['temperature'];
-        final code = current['weathercode'];
+        
+        if (current != null) {
+          final dynamic tempValue = current['temperature'];
+          final int code = current['weathercode'] ?? 0;
 
-        String desc;
-        IconData icon;
-        if (code == 0) { desc = "Clear Sky"; icon = Icons.wb_sunny_rounded; }
-        else if (code <= 3) { desc = "Cloudy"; icon = Icons.wb_cloudy_rounded; }
-        else if (code <= 67) { desc = "Rainy"; icon = Icons.umbrella_rounded; }
-        else { desc = "Cloudy"; icon = Icons.cloud_rounded; }
+          String desc;
+          IconData icon;
+          if (code == 0) { desc = "Clear Sky"; icon = Icons.wb_sunny_rounded; }
+          else if (code <= 3) { desc = "Cloudy"; icon = Icons.wb_cloudy_rounded; }
+          else if (code <= 67) { desc = "Rainy"; icon = Icons.umbrella_rounded; }
+          else { desc = "Cloudy"; icon = Icons.cloud_rounded; }
 
-        String cityName = "My Farm";
-        if (geoResponse.statusCode == 200) {
-          final geoData = json.decode(geoResponse.body);
-          cityName = geoData['address']['city'] ?? geoData['address']['town'] ?? geoData['address']['village'] ?? "Nearby";
-        }
+          String cityName = "My Farm";
+          if (geoResponse.statusCode == 200) {
+            final geoData = json.decode(geoResponse.body);
+            cityName = geoData['address']['city'] ?? geoData['address']['town'] ?? geoData['address']['village'] ?? "Nearby";
+          }
 
-        if (mounted) {
-          setState(() {
-            _weatherTemp = "${temp.round()}°C";
-            _weatherDescription = desc;
-            _weatherIcon = icon;
-            _locationName = cityName;
-          });
+          if (mounted) {
+            setState(() {
+              _weatherTemp = tempValue != null ? "${tempValue.round()}°C" : "--°C";
+              _weatherDescription = desc;
+              _weatherIcon = icon;
+              _locationName = cityName;
+            });
+          }
         }
       }
     } catch (e) {
+      debugPrint("Weather Error: $e");
       if (mounted) {
         setState(() {
           _locationName = "Sri Lanka";
           _weatherDescription = "Weather error";
+          _weatherTemp = "--°C";
         });
       }
     }
@@ -132,6 +152,91 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.settings_outlined),
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                final String displayName = auth.isSeller ? (auth.seller?.businessName ?? "Store") : (auth.user?.fullName ?? "Farmer");
+                final String email = auth.isSeller ? (auth.seller?.email ?? "") : (auth.user?.email ?? "");
+                final String? picUrl = auth.isSeller ? auth.seller?.logoUrl : auth.user?.profilePictureUrl;
+                
+                return UserAccountsDrawerHeader(
+                  accountName: Text(displayName),
+                  accountEmail: Text(email),
+                  currentAccountPicture: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    backgroundImage: picUrl != null 
+                      ? NetworkImage(picUrl.startsWith('http') ? picUrl : '${ApiService().baseUrl}$picUrl') 
+                      : null,
+                    child: picUrl == null ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)) : null,
+                  ),
+                  decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.home_rounded),
+              title: const Text("Home"),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_rounded),
+              title: const Text("Profile"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/profile');
+              },
+            ),
+            if (Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
+               ListTile(
+                 leading: const Icon(Icons.list_alt_rounded),
+                 title: const Text("Spare Part Requests"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/seller-spare-part-requests');
+                 },
+               ),
+            ] else ...[
+               ListTile(
+                 leading: const Icon(Icons.search_rounded),
+                 title: const Text("Find a Spare Part"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/find-spare-part');
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.history_rounded),
+                 title: const Text("My Requests"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/my-spare-part-requests');
+                 },
+               ),
+            ],
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text("Settings"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded, color: Colors.red),
+              title: const Text("Logout", style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                Provider.of<AuthProvider>(context, listen: false).logout();
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              },
+            ),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
@@ -168,13 +273,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           Consumer<AuthProvider>(
-                            builder: (context, auth, _) => Text(
-                              auth.user?.firstname ?? context.tr('hello_farmer'),
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            builder: (context, auth, _) {
+                              final name = auth.isSeller 
+                                ? (auth.seller?.businessName ?? "Store") 
+                                : (auth.user?.firstname ?? context.tr('hello_farmer'));
+                              return Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -197,7 +307,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(width: 8),
                             Text(
                               _weatherTemp,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold, 
+                                fontSize: 18,
+                                color: theme.textTheme.bodyLarge?.color,
+                              ),
                             ),
                           ],
                         ),
@@ -279,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 iconColor: Colors.purple,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.tr('blockchain_coming_soon'))),
+                    SnackBar(content: Text(context.l10n.tr('blockchain_coming_soon'))),
                   );
                 },
               ),

@@ -142,5 +142,29 @@ class TranslateEN {
     'please_enter_email': 'Please enter your email',
     'please_enter_valid_email': 'Please enter a valid email',
     'please_enter_password': 'Please enter your password',
+    
+    // SPARE PARTS
+    'find_spare_part': 'Find Spare Part',
+    'describe_part_header': 'Describe the Part You Need',
+    'part_title': 'Part Title',
+    'part_description': 'Part Description',
+    'please_enter_title': 'Please enter a title',
+    'please_enter_description': 'Please enter a description',
+    'upload_image': 'Upload Image',
+    'send_request': 'Send Request',
+    'request_sent_success': 'Request sent successfully!',
+    'my_spare_part_requests': 'My Spare Part Requests',
+    'no_requests_found': 'No requests found',
+    'no_offers_yet': 'No offers yet',
+    
+    // GREETINGS
+    'good_morning': 'Good Morning',
+    'good_afternoon': 'Good Afternoon',
+    'good_evening': 'Good Evening',
+    'good_night': 'Good Night',
+    
+    // LOGIN ERRORS
+    'login_failed': 'Login failed. Please try again.',
+    'network_error': 'Network error. Please check your internet connection.',
   };
 }

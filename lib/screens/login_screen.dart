@@ -38,14 +38,22 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushReplacementNamed(context, '/home');
+      if (authProvider.isSeller && authProvider.seller != null && !authProvider.seller!.onboardingCompleted) {
+        Navigator.pushReplacementNamed(context, '/seller-onboarding');
+      } else {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? context.tr('invalid_email_password')),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (authProvider.errorMessage?.toLowerCase().contains('banned') ?? false) {
+        _showBannedDialog(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? context.l10n.tr('login_failed')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -65,9 +73,21 @@ class _LoginScreenState extends State<LoginScreen> {
       String? profilePic;
 
       if (provider == 'google') {
-        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          scopes: ['email'],
+          // Use the web client ID from Firebase Console for Android
+          serverClientId: '941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com',
+        );
+        await googleSignIn.signOut(); // Force account selection
         final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        if (googleUser == null) return; // User cancelled
+        if (googleUser == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Google Sign-In cancelled')),
+            );
+          }
+          return;
+        }
 
         email = googleUser.email;
         final nameParts = googleUser.displayName?.split(' ') ?? ['Social', 'User'];
@@ -101,26 +121,95 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (success) {
-        Navigator.pushReplacementNamed(context, '/home');
+        if (authProvider.isSeller && authProvider.seller != null && !authProvider.seller!.onboardingCompleted) {
+          Navigator.pushReplacementNamed(context, '/seller-onboarding');
+        } else {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Social login failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (authProvider.errorMessage?.toLowerCase().contains('banned') ?? false) {
+          _showBannedDialog(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Social login failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint("Social login error: $e");
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      if (e.toString().toLowerCase().contains('banned')) {
+        _showBannedDialog(context);
+      } else {
+        String errorMessage = 'Login failed';
+        if (e.toString().contains('PlatformException')) {
+          if (e.toString().contains('sign_in_canceled')) {
+            errorMessage = 'Sign-in cancelled';
+          } else if (e.toString().contains('network_error')) {
+            errorMessage = 'Network error. Please check your connection.';
+          } else if (e.toString().contains('sign_in_failed')) {
+            errorMessage = 'Sign-in failed. Please try again.';
+          } else {
+            errorMessage = 'Google Sign-In error. Please check your configuration.';
+          }
+        } else {
+          errorMessage = 'Login failed: ${e.toString()}';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
+  }
+
+  void _showBannedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.report_problem, color: Colors.red, size: 30),
+            SizedBox(width: 10),
+            Text("Access Denied", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Your account has been restricted.",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "An administrator has suspended your access for violating our terms of service or safety guidelines.",
+              style: TextStyle(color: Colors.grey),
+            ),
+            SizedBox(height: 16),
+            Text(
+              "If you believe this is a mistake, please reach out to our support team at support@smartfarmer.com",
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Understand", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -246,6 +335,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: Text(context.tr('dont_have_account')),
                 ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/seller-register');
+                  },
+                  child: const Text(
+                    "Register as a Seller",
+                    style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
+                  ),
+                ),
               ],
             ),
           ),
@@ -338,7 +436,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   setState(() => _isSent = true);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.tr('failed_to_send_reset'))),
+                    SnackBar(content: Text(context.l10n.tr('failed_to_send_reset'))),
                   );
                 }
               }
@@ -379,7 +477,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               labelText: context.tr('enter_token'),
               border: const OutlineInputBorder(),
             ),
-            validator: (value) => value!.isEmpty ? context.tr('please_enter_token') : null,
+            validator: (value) => value!.isEmpty ? 'Please enter token' : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -389,7 +487,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               labelText: context.tr('new_password'),
               border: const OutlineInputBorder(),
             ),
-            validator: (value) => value!.length < 6 ? context.tr('password_too_short') : null,
+            validator: (value) => value!.length < 6 ? 'Password too short' : null,
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -399,12 +497,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     .resetPassword(tokenController.text, passwordController.text);
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.tr('password_reset_success'))),
+                    SnackBar(content: Text(context.l10n.tr('password_reset_success'))),
                   );
                   Navigator.pop(context);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.tr('invalid_token'))),
+                    SnackBar(content: Text(context.l10n.tr('invalid_token'))),
                   );
                 }
               }

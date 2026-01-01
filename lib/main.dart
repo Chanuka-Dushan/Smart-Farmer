@@ -12,6 +12,12 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/camera_scan_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/seller_onboarding_screen.dart';
+import 'screens/seller_register_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/spare_part_request_screen.dart';
+import 'screens/my_spare_part_requests_screen.dart';
+import 'screens/seller_spare_part_requests_screen.dart';
 import 'services/l10n.dart';
 import 'services/theme_service.dart';
 import 'providers/auth_provider.dart';
@@ -69,8 +75,14 @@ class SmartSparePartApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),   
         '/register': (context) => const RegisterScreen(),
+        '/seller-register': (context) => const SellerRegisterScreen(),
         '/camera': (context) => const CameraScanScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/seller-onboarding': (context) => const SellerOnboardingScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/find-spare-part': (context) => const SparePartRequestScreen(),
+        '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
+        '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
       },
     );
   }
