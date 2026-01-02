@@ -67,7 +67,7 @@ class _SellerSparePartRequestsScreenState extends State<SellerSparePartRequestsS
                 try {
                   await ApiService().submitSparePartOffer(
                     requestId: requestId,
-                    price: priceController.text,
+                    price: double.tryParse(priceController.text) ?? 0.0,
                     description: descController.text,
                   );
                   if (!mounted) return;

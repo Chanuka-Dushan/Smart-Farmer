@@ -35,13 +35,13 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    final success = await authProvider.register(
-      firstname: _firstnameController.text.trim(),
-      lastname: _lastnameController.text.trim(),
+    final success = await authProvider.registerSeller(
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      businessName: _firstnameController.text.trim(), // Using firstname as business name for now
+      ownerFirstname: _firstnameController.text.trim(),
+      ownerLastname: _lastnameController.text.trim(),
       phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      userType: 'seller',
     );
 
     if (!mounted) return;
@@ -104,13 +104,11 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
       }
 
       final success = await authProvider.socialLogin(
-        email: email,
-        firstname: firstname,
-        lastname: lastname,
-        socialId: socialId,
         provider: provider,
-        profilePictureUrl: profilePictureUrl,
-        userType: 'seller',
+        idToken: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        email: email ?? "seller_${provider}@example.com",
+        name: "${firstname ?? "Social"} ${lastname ?? provider.toUpperCase()}",
+        photoUrl: profilePictureUrl,
       );
 
       if (!mounted) return;

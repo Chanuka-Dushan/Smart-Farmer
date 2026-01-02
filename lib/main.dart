@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
-import '../utils/firebase_helper.dart';
+import 'services/notification_service.dart';
+import 'utils/error_handler.dart';
 import 'screens/splash_screen.dart';
 import 'screens/language_selection_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -26,20 +28,32 @@ Future<void> main() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
-  
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  // Initialize FCM
-  await FirebaseHelper.initialize();
-  
   // Initialize L10n singleton and load language preference
   final l10n = L10n();
-  await l10n.loadLanguage();
+  
+  try {
+    // Load environment variables
+    await dotenv.load(fileName: ".env");
+    
+    // Initialize Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    // Set up background message handler
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    
+    // Initialize notification service
+    await NotificationService.instance.initialize();
+    
+    // Load language preference
+    await l10n.loadLanguage();
+    
+    ErrorHandler.logInfo('App initialization completed successfully');
+  } catch (e) {
+    ErrorHandler.logError('Failed to initialize app', e);
+    // Continue with app startup even if some services fail
+  }
   
   runApp(
     MultiProvider(

@@ -110,12 +110,11 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final success = await authProvider.socialLogin(
-        email: email ?? "user_${provider}@example.com",
-        firstname: firstName ?? "Social",
-        lastname: lastName ?? provider.toUpperCase(),
-        socialId: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
         provider: provider,
-        // profilePictureUrl: profilePic, // Backend update might be needed for this field in SocialLoginRequest
+        idToken: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        email: email ?? "user_${provider}@example.com",
+        name: "${firstName ?? "Social"} ${lastName ?? provider.toUpperCase()}",
+        photoUrl: profilePic,
       );
 
       if (!mounted) return;

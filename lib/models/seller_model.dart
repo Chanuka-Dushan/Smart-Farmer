@@ -30,7 +30,7 @@ class Seller {
     this.longitude,
     this.shopLocationName,
     this.logoUrl,
-    required this.onboardingCompleted,
+    this.onboardingCompleted = false,
     required this.isVerified,
     required this.isActive,
     required this.createdAt,

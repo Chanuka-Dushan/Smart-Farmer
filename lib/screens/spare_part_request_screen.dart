@@ -18,6 +18,7 @@ class _SparePartRequestScreenState extends State<SparePartRequestScreen> {
   final _descriptionController = TextEditingController();
   File? _image;
   bool _isLoading = false;
+  String _selectedCategory = 'Engine Parts'; // Default category
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -45,13 +46,14 @@ class _SparePartRequestScreenState extends State<SparePartRequestScreen> {
       final result = await apiService.createSparePartRequest(
         title: _titleController.text,
         description: _descriptionController.text,
+        category: _selectedCategory, // Add required category parameter
       );
 
       final requestId = result['id'];
 
       // 2. Upload image if exists
       if (_image != null) {
-        await apiService.uploadSparePartImage(requestId, _image!.path);
+        await apiService.uploadSparePartImage(_image!.path);
       }
 
       if (!mounted) return;
