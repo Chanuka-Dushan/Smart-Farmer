@@ -63,7 +63,7 @@ class User {
 class AuthResponse {
   final String accessToken;
   final String tokenType;
-  final dynamic user; // Can be User or Seller
+  final User user;
 
   AuthResponse({
     required this.accessToken,
@@ -75,7 +75,7 @@ class AuthResponse {
     return AuthResponse(
       accessToken: json['access_token'] ?? '',
       tokenType: json['token_type'] ?? 'Bearer',
-      user: json['user'] ?? {},
+      user: User.fromJson(json['user'] ?? {}),
     );
   }
 }

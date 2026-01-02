@@ -205,20 +205,20 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // For now, create a temporary implementation
-      // This would normally call a social login API endpoint
       if (email != null && name != null) {
-        // Simulate successful login with social provider data
+        // Parse name into firstname and lastname
         final nameParts = name.split(' ');
         final firstname = nameParts.isNotEmpty ? nameParts.first : 'User';
         final lastname = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
         
-        // Try to register/login with social data
-        final authResponse = await _apiService.register(
+        // Call the dedicated social login endpoint
+        final authResponse = await _apiService.socialLogin(
+          provider: provider,
+          email: email,
           firstname: firstname,
           lastname: lastname,
-          email: email,
-          password: 'social_${provider}_${idToken.substring(0, 8)}', // Temporary password
+          socialId: idToken,
+          photoUrl: photoUrl,
         );
 
         _user = authResponse.user;

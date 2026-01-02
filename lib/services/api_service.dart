@@ -318,6 +318,54 @@ class ApiService {
     }
   }
 
+  /// Social login (Google/Facebook)
+  Future<AuthResponse> socialLogin({
+    required String provider,
+    required String email,
+    required String firstname,
+    required String lastname,
+    required String socialId,
+    String? photoUrl,
+  }) async {
+    try {
+      ErrorHandler.logInfo('Attempting social login for email: $email');
+
+      // Get FCM token for registration
+      final fcmToken = NotificationService.instance.currentToken;
+      
+      final response = await _makeRequest('POST', '/api/auth/social',
+          body: {
+            'email': email,
+            'firstname': firstname,
+            'lastname': lastname,
+            'social_id': socialId,
+            'provider': provider,
+            if (photoUrl?.isNotEmpty == true) 'profile_picture_url': photoUrl,
+            if (fcmToken?.isNotEmpty == true) 'fcm_token': fcmToken,
+          },
+          includeAuth: false);
+
+      if (response.statusCode == 200) {
+        final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
+        
+        // Store authentication data
+        await storage.write(key: 'auth_token', value: authResponse.accessToken);
+        await storage.write(key: 'user_type', value: 'user');
+        await storage.write(key: 'user_id', value: authResponse.user.id.toString());
+        
+        ErrorHandler.logInfo('Social login successful');
+        return authResponse;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Social login failed', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
   // ==================== User Profile Management ====================
 
   /// Get current user's profile
