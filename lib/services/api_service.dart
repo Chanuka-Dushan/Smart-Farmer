@@ -111,15 +111,15 @@ class ApiService {
     }
   }
 
-  /// Login user with email and password
+  /// Login user with email and password (checks both user and seller)
   Future<AuthResponse> login({
     required String email,
     required String password,
   }) async {
     try {
-      ErrorHandler.logInfo('Attempting user login for email: $email');
+      ErrorHandler.logInfo('Attempting unified login for email: $email');
       
-      final response = await _makeRequest('POST', '/api/auth/login',
+      final response = await _makeRequest('POST', '/api/auth/unified-login',
           body: {
             'email': email,
             'password': password,
@@ -127,22 +127,27 @@ class ApiService {
           includeAuth: false);
 
       if (response.statusCode == 200) {
-        final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
+        final jsonData = _parseJsonResponse(response);
+        
+        // Check user_type from the response
+        final userType = jsonData['user']?['user_type'] ?? 'user';
         
         // Store authentication data
-        await storage.write(key: 'auth_token', value: authResponse.accessToken);
-        await storage.write(key: 'user_type', value: 'user');
-        await storage.write(key: 'user_id', value: authResponse.user.id.toString());
+        await storage.write(key: 'auth_token', value: jsonData['access_token']);
+        await storage.write(key: 'user_type', value: userType);
+        await storage.write(key: '${userType}_id', value: jsonData['user']['id'].toString());
         
-        ErrorHandler.logInfo('User login successful');
-        return authResponse;
+        ErrorHandler.logInfo('Unified login successful as $userType');
+        
+        // Return AuthResponse with proper type handling
+        return AuthResponse.fromJson(jsonData);
       } else {
         final errorMessage = ErrorHandler.handleHttpError(response);
         throw Exception(errorMessage);
       }
     } catch (e) {
       final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
-      ErrorHandler.logError('User login failed', e);
+      ErrorHandler.logError('Unified login failed', e);
       throw Exception(friendlyMessage);
     }
   }
@@ -241,7 +246,11 @@ class ApiService {
         // Store authentication data
         await storage.write(key: 'auth_token', value: authResponse.accessToken);
         await storage.write(key: 'user_type', value: 'seller');
-        await storage.write(key: 'seller_id', value: authResponse.user.id.toString());
+        // Access id from the dynamic user object (could be Map or Seller)
+        final sellerId = authResponse.user is Map 
+            ? authResponse.user['id'].toString() 
+            : authResponse.user.id.toString();
+        await storage.write(key: 'seller_id', value: sellerId);
         
         ErrorHandler.logInfo('Seller registration successful');
         return authResponse;
@@ -277,7 +286,11 @@ class ApiService {
         // Store authentication data
         await storage.write(key: 'auth_token', value: authResponse.accessToken);
         await storage.write(key: 'user_type', value: 'seller');
-        await storage.write(key: 'seller_id', value: authResponse.user.id.toString());
+        // Access id from the dynamic user object (could be Map or Seller)
+        final sellerId = authResponse.user is Map 
+            ? authResponse.user['id'].toString() 
+            : authResponse.user.id.toString();
+        await storage.write(key: 'seller_id', value: sellerId);
         
         ErrorHandler.logInfo('Seller login successful');
         return authResponse;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../models/seller_model.dart';
 import '../services/api_service.dart';
@@ -29,18 +30,16 @@ class AuthProvider with ChangeNotifier {
     _isAuthenticated = await _apiService.isAuthenticated();
     if (_isAuthenticated) {
       try {
-        // Try to get seller profile first
-        try {
+        // Read the stored user_type from storage
+        final storage = const FlutterSecureStorage();
+        final storedUserType = await storage.read(key: 'user_type');
+        
+        if (storedUserType == 'seller') {
           _seller = await _apiService.getSellerProfile();
           _userType = 'seller';
-        } catch (e) {
-          // If seller profile fails, try user profile
-          try {
-            _user = await _apiService.getProfile();
-            _userType = 'user';
-          } catch (e) {
-            _isAuthenticated = false;
-          }
+        } else {
+          _user = await _apiService.getProfile();
+          _userType = 'user';
         }
       } catch (e) {
         _isAuthenticated = false;
@@ -119,7 +118,9 @@ class AuthProvider with ChangeNotifier {
         shopLocationName: shopLocationName,
       );
 
-      _seller = authResponse.user;
+      _seller = authResponse.user is Seller 
+          ? authResponse.user 
+          : Seller.fromJson(authResponse.user);
       _userType = 'seller';
       _isAuthenticated = true;
       _isLoading = false;
@@ -133,7 +134,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Login user
+  /// Login user (checks both regular user and seller)
   Future<bool> login({
     required String email,
     required String password,
@@ -148,8 +149,30 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      _user = authResponse.user;
-      _userType = 'user';
+      // Check if the response contains seller data or user data
+      if (authResponse.user is Map<String, dynamic>) {
+        final userData = authResponse.user as Map<String, dynamic>;
+        
+        // Check if it's a seller by looking for business_name
+        if (userData.containsKey('business_name')) {
+          _seller = Seller.fromJson(userData);
+          _userType = 'seller';
+          _user = null;
+        } else {
+          _user = User.fromJson(userData);
+          _userType = 'user';
+          _seller = null;
+        }
+      } else if (authResponse.user is Seller) {
+        _seller = authResponse.user;
+        _userType = 'seller';
+        _user = null;
+      } else if (authResponse.user is User) {
+        _user = authResponse.user;
+        _userType = 'user';
+        _seller = null;
+      }
+      
       _isAuthenticated = true;
       _isLoading = false;
       notifyListeners();
@@ -177,7 +200,9 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      _seller = authResponse.user;
+      _seller = authResponse.user is Seller 
+          ? authResponse.user 
+          : Seller.fromJson(authResponse.user);
       _userType = 'seller';
       _isAuthenticated = true;
       _isLoading = false;
@@ -199,6 +224,8 @@ class AuthProvider with ChangeNotifier {
     String? email,
     String? name,
     String? photoUrl,
+    String? userType, // 'user' or 'seller'
+    String? businessName, // For seller registration
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -211,18 +238,59 @@ class AuthProvider with ChangeNotifier {
         final firstname = nameParts.isNotEmpty ? nameParts.first : 'User';
         final lastname = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
         
-        // Call the dedicated social login endpoint
-        final authResponse = await _apiService.socialLogin(
-          provider: provider,
-          email: email,
-          firstname: firstname,
-          lastname: lastname,
-          socialId: idToken,
-          photoUrl: photoUrl,
-        );
+        // Determine if registering as seller
+        final isSeller = userType == 'seller';
+        
+        if (isSeller) {
+          // Register as seller using social login
+          final sellerResponse = await _apiService.registerSeller(
+            email: email,
+            password: 'social_${provider}_${idToken.substring(0, 8)}', // Temporary password
+            businessName: businessName ?? '$firstname\'s Shop',
+            ownerFirstname: firstname,
+            ownerLastname: lastname,
+            phoneNumber: null,
+          );
+          _seller = sellerResponse.user is Seller 
+              ? sellerResponse.user 
+              : Seller.fromJson(sellerResponse.user);
+          _userType = 'seller';
+        } else {
+          // Call the dedicated social login endpoint for regular users
+          final authResponse = await _apiService.socialLogin(
+            provider: provider,
+            email: email,
+            firstname: firstname,
+            lastname: lastname,
+            socialId: idToken,
+            photoUrl: photoUrl,
+          );
+          
+          // Check if the response contains seller data or user data
+          if (authResponse.user is Map<String, dynamic>) {
+            final userData = authResponse.user as Map<String, dynamic>;
+            
+            // Check if it's a seller by looking for business_name
+            if (userData.containsKey('business_name')) {
+              _seller = Seller.fromJson(userData);
+              _userType = 'seller';
+              _user = null;
+            } else {
+              _user = User.fromJson(userData);
+              _userType = 'user';
+              _seller = null;
+            }
+          } else if (authResponse.user is Seller) {
+            _seller = authResponse.user;
+            _userType = 'seller';
+            _user = null;
+          } else if (authResponse.user is User) {
+            _user = authResponse.user;
+            _userType = 'user';
+            _seller = null;
+          }
+        }
 
-        _user = authResponse.user;
-        _userType = 'user';
         _isAuthenticated = true;
         _isLoading = false;
         notifyListeners();

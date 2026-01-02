@@ -31,9 +31,9 @@ class User {
       firstname: json['firstname'] ?? '',
       lastname: json['lastname'] ?? '',
       email: json['email'] ?? '',
-      phoneNumber: json['phone_number'],
-      address: json['address'],
-      profilePictureUrl: json['profile_picture_url'],
+      phoneNumber: json['phone_number'] is String ? json['phone_number'] : null,
+      address: json['address'] is String ? json['address'] : null,
+      profilePictureUrl: json['profile_picture_url'] is String ? json['profile_picture_url'] : null,
       isBanned: json['is_banned'] ?? false,
       isDeleted: json['is_deleted'] ?? false,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
@@ -63,7 +63,7 @@ class User {
 class AuthResponse {
   final String accessToken;
   final String tokenType;
-  final User user;
+  final dynamic user; // Can be User or Seller
 
   AuthResponse({
     required this.accessToken,
@@ -72,10 +72,23 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    // Parse user data - check if it's a seller or regular user
+    final userData = json['user'] ?? {};
+    dynamic parsedUser;
+    
+    // Check if it has seller-specific fields
+    if (userData['business_name'] != null) {
+      // It's a seller
+      parsedUser = userData; // Keep as map for now, will be parsed in AuthProvider
+    } else {
+      // It's a regular user
+      parsedUser = User.fromJson(userData);
+    }
+    
     return AuthResponse(
       accessToken: json['access_token'] ?? '',
       tokenType: json['token_type'] ?? 'Bearer',
-      user: User.fromJson(json['user'] ?? {}),
+      user: parsedUser,
     );
   }
 }
