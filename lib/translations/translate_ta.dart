@@ -122,7 +122,6 @@ class TranslateTA {
     'delete_failed': 'கணக்கு நீக்கம் தோல்வியடைந்தது',
     'delete': 'நீக்கு',
     'change': 'மாற்று',
-    'profile_updated': 'சுயவிவரம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது!',
     
     // SELLER PROFILE
     'business_name': 'வணிக பெயர்',

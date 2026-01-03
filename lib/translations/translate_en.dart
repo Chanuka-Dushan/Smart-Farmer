@@ -122,7 +122,6 @@ class TranslateEN {
     'delete_failed': 'Account deletion failed',
     'delete': 'Delete',
     'change': 'Change',
-    'profile_updated': 'Profile updated successfully!',
     
     // SELLER PROFILE
     'business_name': 'Business Name',

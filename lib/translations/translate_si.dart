@@ -122,7 +122,6 @@ class TranslateSI {
     'delete_failed': 'ගිණුම මකාදැමීම අසාර්ථකයි',
     'delete': 'මකන්න',
     'change': 'වෙනස් කරන්න',
-    'profile_updated': 'පැතිකඩ සාර්ථකව යාවත්කාලීන කරන ලදී!',
     
     // SELLER PROFILE
     'business_name': 'ව්‍යාපාර නම',
