@@ -86,7 +86,7 @@ class TranslateSI {
     // SETTINGS SCREEN
     'settings': 'සැකසුම්',
     'profile_information': 'පැතිකඩ තොරතුරු',
-    'phone': 'දුරකථනය',
+
     'optional': 'විකල්ප',
     'password_min_length': 'අවම අක්ෂර 6 ක්',
     'language': 'භාෂාව',
