@@ -14,6 +14,7 @@ class SellerRegisterScreen extends StatefulWidget {
 
 class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _businessNameController = TextEditingController();
   final _firstnameController = TextEditingController();
   final _lastnameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -22,6 +23,7 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
 
   @override
   void dispose() {
+    _businessNameController.dispose();
     _firstnameController.dispose();
     _lastnameController.dispose();
     _emailController.dispose();
@@ -35,13 +37,13 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    final success = await authProvider.register(
-      firstname: _firstnameController.text.trim(),
-      lastname: _lastnameController.text.trim(),
+    final success = await authProvider.registerSeller(
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      businessName: _businessNameController.text.trim(),
+      ownerFirstname: _firstnameController.text.trim(),
+      ownerLastname: _lastnameController.text.trim(),
       phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      userType: 'seller',
     );
 
     if (!mounted) return;
@@ -104,13 +106,13 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
       }
 
       final success = await authProvider.socialLogin(
-        email: email,
-        firstname: firstname,
-        lastname: lastname,
-        socialId: socialId,
         provider: provider,
-        profilePictureUrl: profilePictureUrl,
+        idToken: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        email: email ?? "seller_${provider}@example.com",
+        name: "${firstname ?? "Social"} ${lastname ?? provider.toUpperCase()}",
+        photoUrl: profilePictureUrl,
         userType: 'seller',
+        businessName: '${firstname ?? "Social"}\'s Shop',
       );
 
       if (!mounted) return;
@@ -186,7 +188,10 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register as Seller")),
+      appBar: AppBar(
+        title: const Text('Register as Seller'),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -196,25 +201,111 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                const Text(
-                  "Create Your Seller Account",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                Icon(
+                  Icons.store_rounded,
+                  size: 64,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.green[400]
+                      : const Color(0xFF2E7D32),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Create Seller Account",
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  "Join our growing community of local farmers and sellers",
+                Text(
+                  "Sell farm equipment & spare parts",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                 ),
                 const SizedBox(height: 32),
 
+                // Social Login Options
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _handleSocialLogin('google'),
+                        icon: const Icon(Icons.g_mobiledata, size: 28),
+                        label: const Text('Google'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _handleSocialLogin('facebook'),
+                        icon: const Icon(Icons.facebook, size: 24),
+                        label: const Text('Facebook'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                TextFormField(
+                  controller: _businessNameController,
+                  decoration: InputDecoration(
+                    labelText: 'Business/Shop Name *',
+                    hintText: 'e.g., Green Farm Supplies',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.store),
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
+                  ),
+                  validator: (value) => value!.isEmpty ? 'Please enter your business name' : null,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '📍 You can add your business location and logo after registration',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _firstnameController,
                   decoration: InputDecoration(
                     labelText: '${context.tr('first_name')} *',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     prefixIcon: const Icon(Icons.person),
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
                   ),
                   validator: (value) => value!.isEmpty ? 'Please enter first name' : null,
                 ),
@@ -223,8 +314,14 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                   controller: _lastnameController,
                   decoration: InputDecoration(
                     labelText: '${context.tr('last_name')} *',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     prefixIcon: const Icon(Icons.person_outline),
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
                   ),
                   validator: (value) => value!.isEmpty ? 'Please enter last name' : null,
                 ),
@@ -234,8 +331,14 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: '${context.tr('email')} *',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     prefixIcon: const Icon(Icons.email),
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return context.tr('please_enter_email');
@@ -249,8 +352,15 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: '${context.tr('password')} *',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     prefixIcon: const Icon(Icons.lock),
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
+                    helperText: 'Minimum 6 characters',
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return context.tr('please_enter_password');
@@ -262,10 +372,16 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Phone Number (Optional)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.phone),
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
                   ),
                 ),
                 
@@ -292,69 +408,9 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                   onPressed: () => Navigator.pop(context),
                   child: Text(context.tr('already_have_account')),
                 ),
-
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        "Or Register with",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                      ),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _socialButton(
-                      icon: Icons.g_mobiledata,
-                      color: Colors.red,
-                      label: 'Google',
-                      onPressed: () => _handleSocialLogin('google'),
-                    ),
-                    _socialButton(
-                      icon: Icons.facebook,
-                      color: const Color(0xFF1877F2),
-                      label: 'Facebook',
-                      onPressed: () => _handleSocialLogin('facebook'),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _socialButton({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
         ),
       ),
     );

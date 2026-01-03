@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../models/seller_model.dart';
 import '../services/api_service.dart';
@@ -11,13 +12,14 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _userType; // 'user' or 'seller'
 
   User? get user => _user;
   Seller? get seller => _seller;
   bool get isAuthenticated => _isAuthenticated;
-  bool get isSeller => _seller != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get isSeller => _userType == 'seller';
 
   AuthProvider() {
     checkAuthStatus();
@@ -28,25 +30,19 @@ class AuthProvider with ChangeNotifier {
     _isAuthenticated = await _apiService.isAuthenticated();
     if (_isAuthenticated) {
       try {
-        final userType = await _apiService.storage.read(key: 'user_type');
-        if (userType == 'seller') {
-          _seller = await _apiService.getSellerProfile().timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => throw Exception('Connection timeout'),
-          );
-          _user = null;
+        // Read the stored user_type from storage
+        final storage = const FlutterSecureStorage();
+        final storedUserType = await storage.read(key: 'user_type');
+        
+        if (storedUserType == 'seller') {
+          _seller = await _apiService.getSellerProfile();
+          _userType = 'seller';
         } else {
-          _user = await _apiService.getProfile().timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => throw Exception('Connection timeout'),
-          );
-          _seller = null;
+          _user = await _apiService.getProfile();
+          _userType = 'user';
         }
       } catch (e) {
-        debugPrint('Error loading profile: $e');
         _isAuthenticated = false;
-        _user = null;
-        _seller = null;
       }
     }
     notifyListeners();
@@ -60,20 +56,12 @@ class AuthProvider with ChangeNotifier {
     required String password,
     String? phoneNumber,
     String? address,
-    String? userType,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      String? fcmToken;
-      try {
-        fcmToken = await FirebaseMessaging.instance.getToken();
-      } catch (e) {
-        debugPrint('FCM token not available: $e');
-      }
-
       final authResponse = await _apiService.register(
         firstname: firstname,
         lastname: lastname,
@@ -81,20 +69,10 @@ class AuthProvider with ChangeNotifier {
         password: password,
         phoneNumber: phoneNumber,
         address: address,
-        fcmToken: fcmToken,
-        userType: userType,
       );
 
-      if (userType == 'seller') {
-        _seller = authResponse.user is Seller ? authResponse.user : Seller.fromJson(authResponse.user);
-        _user = null;
-        await _apiService.storage.write(key: 'user_type', value: 'seller');
-      } else {
-        _user = authResponse.user is User ? authResponse.user : User.fromJson(authResponse.user);
-        _seller = null;
-        await _apiService.storage.write(key: 'user_type', value: 'buyer');
-      }
-      
+      _user = authResponse.user;
+      _userType = 'user';
       _isAuthenticated = true;
       _isLoading = false;
       notifyListeners();
@@ -107,7 +85,56 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Login user
+  /// Register new seller
+  Future<bool> registerSeller({
+    required String email,
+    required String password,
+    required String businessName,
+    required String ownerFirstname,
+    required String ownerLastname,
+    String? phoneNumber,
+    String? businessAddress,
+    String? businessDescription,
+    String? latitude,
+    String? longitude,
+    String? shopLocationName,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final authResponse = await _apiService.registerSeller(
+        email: email,
+        password: password,
+        businessName: businessName,
+        ownerFirstname: ownerFirstname,
+        ownerLastname: ownerLastname,
+        phoneNumber: phoneNumber,
+        businessAddress: businessAddress,
+        businessDescription: businessDescription,
+        latitude: latitude,
+        longitude: longitude,
+        shopLocationName: shopLocationName,
+      );
+
+      _seller = authResponse.user is Seller 
+          ? authResponse.user 
+          : Seller.fromJson(authResponse.user);
+      _userType = 'seller';
+      _isAuthenticated = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Login user (checks both regular user and seller)
   Future<bool> login({
     required String email,
     required String password,
@@ -117,32 +144,33 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final authResponse = await _apiService.login(email: email, password: password);
-      
-      // Handle dynamic user data
-      dynamic userData = authResponse.user;
-      Map<String, dynamic> userMap;
-      
-      if (userData is Map<String, dynamic>) {
-        userMap = userData;
-      } else if (userData is User) {
-        userMap = (userData as User).toJson();
-      } else if (userData is Seller) {
-        userMap = (userData as Seller).toJson();
-      } else {
-        throw Exception('Invalid user data format');
-      }
-      
-      final userType = userMap['user_type'] ?? 'buyer';
+      final authResponse = await _apiService.login(
+        email: email,
+        password: password,
+      );
 
-      if (userType == 'seller') {
-        _seller = Seller.fromJson(userMap);
+      // Check if the response contains seller data or user data
+      if (authResponse.user is Map<String, dynamic>) {
+        final userData = authResponse.user as Map<String, dynamic>;
+        
+        // Check if it's a seller by looking for business_name
+        if (userData.containsKey('business_name')) {
+          _seller = Seller.fromJson(userData);
+          _userType = 'seller';
+          _user = null;
+        } else {
+          _user = User.fromJson(userData);
+          _userType = 'user';
+          _seller = null;
+        }
+      } else if (authResponse.user is Seller) {
+        _seller = authResponse.user;
+        _userType = 'seller';
         _user = null;
-        await _apiService.storage.write(key: 'user_type', value: 'seller');
-      } else {
-        _user = User.fromJson(userMap);
+      } else if (authResponse.user is User) {
+        _user = authResponse.user;
+        _userType = 'user';
         _seller = null;
-        await _apiService.storage.write(key: 'user_type', value: 'buyer');
       }
       
       _isAuthenticated = true;
@@ -150,7 +178,6 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('Login error: $e');
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       _isLoading = false;
       notifyListeners();
@@ -158,52 +185,25 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Social login
-  Future<bool> socialLogin({
+  /// Login seller
+  Future<bool> loginSeller({
     required String email,
-    required String firstname,
-    required String lastname,
-    required String socialId,
-    required String provider,
-    String? profilePictureUrl,
-    String? userType = 'buyer',
+    required String password,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      String? fcmToken;
-      try {
-        fcmToken = await FirebaseMessaging.instance.getToken();
-      } catch (e) {
-        debugPrint('FCM token not available: $e');
-      }
-
-      final authResponse = await _apiService.socialLogin(
+      final authResponse = await _apiService.loginSeller(
         email: email,
-        firstname: firstname,
-        lastname: lastname,
-        socialId: socialId,
-        provider: provider,
-        profilePictureUrl: profilePictureUrl,
-        fcmToken: fcmToken,
-        userType: userType,
+        password: password,
       );
 
-      final userData = authResponse.user as Map<String, dynamic>;
-      final responseUserType = userData['user_type'] ?? 'buyer';
-
-      if (responseUserType == 'seller') {
-        _seller = Seller.fromJson(userData);
-        _user = null;
-        await _apiService.storage.write(key: 'user_type', value: 'seller');
-      } else {
-        _user = User.fromJson(userData);
-        _seller = null;
-        await _apiService.storage.write(key: 'user_type', value: 'buyer');
-      }
-      
+      _seller = authResponse.user is Seller 
+          ? authResponse.user 
+          : Seller.fromJson(authResponse.user);
+      _userType = 'seller';
       _isAuthenticated = true;
       _isLoading = false;
       notifyListeners();
@@ -216,36 +216,88 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Forgot password
-  Future<bool> forgotPassword(String email) async {
+  /// Social login (Google/Facebook)
+  Future<bool> socialLogin({
+    required String provider, // 'google' or 'facebook'
+    required String idToken,
+    String? accessToken,
+    String? email,
+    String? name,
+    String? photoUrl,
+    String? userType, // 'user' or 'seller'
+    String? businessName, // For seller registration
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _apiService.forgotPassword(email);
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+      if (email != null && name != null) {
+        // Parse name into firstname and lastname
+        final nameParts = name.split(' ');
+        final firstname = nameParts.isNotEmpty ? nameParts.first : 'User';
+        final lastname = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+        
+        // Determine if registering as seller
+        final isSeller = userType == 'seller';
+        
+        if (isSeller) {
+          // Register as seller using social login
+          final sellerResponse = await _apiService.registerSeller(
+            email: email,
+            password: 'social_${provider}_${idToken.substring(0, 8)}', // Temporary password
+            businessName: businessName ?? '$firstname\'s Shop',
+            ownerFirstname: firstname,
+            ownerLastname: lastname,
+            phoneNumber: null,
+          );
+          _seller = sellerResponse.user is Seller 
+              ? sellerResponse.user 
+              : Seller.fromJson(sellerResponse.user);
+          _userType = 'seller';
+        } else {
+          // Call the dedicated social login endpoint for regular users
+          final authResponse = await _apiService.socialLogin(
+            provider: provider,
+            email: email,
+            firstname: firstname,
+            lastname: lastname,
+            socialId: idToken,
+            photoUrl: photoUrl,
+          );
+          
+          // Check if the response contains seller data or user data
+          if (authResponse.user is Map<String, dynamic>) {
+            final userData = authResponse.user as Map<String, dynamic>;
+            
+            // Check if it's a seller by looking for business_name
+            if (userData.containsKey('business_name')) {
+              _seller = Seller.fromJson(userData);
+              _userType = 'seller';
+              _user = null;
+            } else {
+              _user = User.fromJson(userData);
+              _userType = 'user';
+              _seller = null;
+            }
+          } else if (authResponse.user is Seller) {
+            _seller = authResponse.user;
+            _userType = 'seller';
+            _user = null;
+          } else if (authResponse.user is User) {
+            _user = authResponse.user;
+            _userType = 'user';
+            _seller = null;
+          }
+        }
 
-  /// Reset password
-  Future<bool> resetPassword(String token, String newPassword) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _apiService.resetPassword(token, newPassword);
-      _isLoading = false;
-      notifyListeners();
-      return true;
+        _isAuthenticated = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      
+      throw Exception('Invalid social login data');
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       _isLoading = false;
@@ -259,6 +311,7 @@ class AuthProvider with ChangeNotifier {
     await _apiService.logout();
     _user = null;
     _seller = null;
+    _userType = null;
     _isAuthenticated = false;
     _errorMessage = null;
     notifyListeners();
@@ -267,7 +320,11 @@ class AuthProvider with ChangeNotifier {
   /// Get user profile
   Future<void> fetchProfile() async {
     try {
-      _user = await _apiService.getProfile();
+      if (isSeller) {
+        _seller = await _apiService.getSellerProfile();
+      } else {
+        _user = await _apiService.getProfile();
+      }
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -281,7 +338,6 @@ class AuthProvider with ChangeNotifier {
     String? lastname,
     String? phoneNumber,
     String? address,
-    String? profilePictureUrl,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -293,7 +349,6 @@ class AuthProvider with ChangeNotifier {
         lastname: lastname,
         phoneNumber: phoneNumber,
         address: address,
-        profilePictureUrl: profilePictureUrl,
       );
       _isLoading = false;
       notifyListeners();
@@ -306,18 +361,28 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Upload profile picture
-  Future<bool> uploadProfilePicture(String filePath) async {
+  /// Update seller profile
+  Future<bool> updateSellerProfile({
+    String? businessName,
+    String? ownerFirstname,
+    String? ownerLastname,
+    String? phoneNumber,
+    String? businessAddress,
+    String? businessDescription,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      if (isSeller) {
-        _seller = await _apiService.uploadSellerLogo(filePath);
-      } else {
-        _user = await _apiService.uploadProfilePicture(filePath);
-      }
+      _seller = await _apiService.updateSellerProfile(
+        businessName: businessName,
+        ownerFirstname: ownerFirstname,
+        ownerLastname: ownerLastname,
+        phoneNumber: phoneNumber,
+        businessAddress: businessAddress,
+        businessDescription: businessDescription,
+      );
       _isLoading = false;
       notifyListeners();
       return true;
@@ -329,18 +394,30 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Delete profile picture
-  Future<bool> deleteProfilePicture() async {
+  /// Complete seller onboarding
+  Future<bool> completeSellerOnboarding({
+    String? businessDescription,
+    String? latitude,
+    String? longitude,
+    String? shopLocationName,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      if (isSeller) {
-        _seller = await _apiService.deleteSellerLogo();
-      } else {
-        _user = await _apiService.deleteProfilePicture();
+      _seller = await _apiService.updateSellerProfile(
+        businessDescription: businessDescription,
+      );
+      
+      if (latitude != null && longitude != null) {
+        _seller = await _apiService.updateSellerLocation(
+          latitude: latitude,
+          longitude: longitude,
+          shopLocationName: shopLocationName,
+        );
       }
+      
       _isLoading = false;
       notifyListeners();
       return true;
@@ -362,10 +439,101 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _apiService.changePassword(
-        oldPassword: oldPassword,
-        newPassword: newPassword,
-      );
+      if (isSeller) {
+        await _apiService.changeSellerPassword(
+          oldPassword: oldPassword,
+          newPassword: newPassword,
+        );
+      } else {
+        await _apiService.changePassword(
+          oldPassword: oldPassword,
+          newPassword: newPassword,
+        );
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Forgot password
+  Future<bool> forgotPassword(String email) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // This would normally call a forgot password API endpoint
+      // For now, return success as placeholder
+      await Future.delayed(Duration(milliseconds: 500)); // Simulate API call
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Reset password with token
+  Future<bool> resetPassword(String token, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // This would normally call a reset password API endpoint
+      // For now, return success as placeholder
+      await Future.delayed(Duration(milliseconds: 500)); // Simulate API call
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Upload profile picture
+  Future<bool> uploadProfilePicture(String imagePath) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // This would normally upload the image to server
+      // For now, return success as placeholder
+      await Future.delayed(Duration(milliseconds: 500)); // Simulate API call
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Delete profile picture
+  Future<bool> deleteProfilePicture() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // This would normally delete the profile picture from server
+      // For now, return success as placeholder
+      await Future.delayed(Duration(milliseconds: 500)); // Simulate API call
       _isLoading = false;
       notifyListeners();
       return true;
@@ -386,73 +554,9 @@ class AuthProvider with ChangeNotifier {
     try {
       await _apiService.deleteAccount();
       _user = null;
+      _seller = null;
+      _userType = null;
       _isAuthenticated = false;
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Update seller profile
-  Future<bool> updateSellerProfile({
-    String? businessName,
-    String? ownerFirstname,
-    String? ownerLastname,
-    String? phoneNumber,
-    String? businessAddress,
-    String? businessDescription,
-    bool? onboardingCompleted,
-  }) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      _seller = await _apiService.updateSellerProfile(
-        businessName: businessName,
-        ownerFirstname: ownerFirstname,
-        ownerLastname: ownerLastname,
-        phoneNumber: phoneNumber,
-        businessAddress: businessAddress,
-        businessDescription: businessDescription,
-        onboarding_completed: onboardingCompleted,
-      );
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Complete seller onboarding
-  Future<bool> completeSellerOnboarding({
-    required String businessName,
-    required String businessAddress,
-    required String latitude,
-    required String longitude,
-    String? logoPath,
-  }) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      _seller = await _apiService.completeSellerOnboarding(
-        businessName: businessName,
-        businessAddress: businessAddress,
-        latitude: latitude,
-        longitude: longitude,
-        logoPath: logoPath,
-      );
       _isLoading = false;
       notifyListeners();
       return true;

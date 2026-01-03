@@ -51,27 +51,5 @@
 	<string>This app needs access to your location to show nearby shops and set your shop location.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs access to your location to show nearby shops and set your shop location.</string>
-
-	<!-- Facebook Config -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>fb1163719439176008</string>
-			</array>
-		</dict>
-	</array>
-	<key>FacebookAppID</key>
-	<string>1163719439176008</string>
-	<key>FacebookClientToken</key>
-	<string>1163719439176008</string> <!-- Placeholder -->
-	<key>FacebookDisplayName</key>
-	<string>Smart Farmer</string>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>fbapi</string>
-		<string>fb-messenger-share-api</string>
-	</array>
 </dict>
 </plist>

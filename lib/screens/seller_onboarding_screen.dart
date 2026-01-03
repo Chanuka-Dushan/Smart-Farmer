@@ -70,11 +70,10 @@ class _SellerOnboardingScreenState extends State<SellerOnboardingScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.completeSellerOnboarding(
-      businessName: _businessNameController.text.trim(),
-      businessAddress: _businessAddressController.text.trim(),
+      businessDescription: _businessNameController.text.trim(),
       latitude: _selectedLocation!.latitude.toString(),
       longitude: _selectedLocation!.longitude.toString(),
-      logoPath: _logoFile?.path,
+      shopLocationName: _businessAddressController.text.trim(),
     );
 
     if (success && mounted) {
