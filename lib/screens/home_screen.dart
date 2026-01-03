@@ -6,6 +6,10 @@ import 'profile_screen.dart';
 import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 
+import 'nlp_search_screen.dart';
+import 'compatibility_screen.dart';
+import 'inventory_optimization_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -21,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('dashboard')),
-        backgroundColor: const Color(0xFF2E7D32), // Agri Green
+        backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -40,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+
+      // ================= BODY =================
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -53,12 +59,12 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(context.tr('machinery_status_good')),
             const SizedBox(height: 20),
 
-            // --- 1. Predictive Analytics Card ---
+            // 1. Predictive Analytics
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PredictScreen()),
+                  MaterialPageRoute(builder: (_) => const PredictScreen()),
                 );
               },
               child: _buildFeatureCard(
@@ -71,12 +77,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // --- 2. Camera Scan Card ---
+            // 2. Camera Scan
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ScanScreen()),
+                  MaterialPageRoute(builder: (_) => const ScanScreen()),
                 );
               },
               child: _buildFeatureCard(
@@ -89,12 +95,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // --- 3. Supplier Map Card ---
+            // 3. Supplier Map
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SupplierScreen()),
+                  MaterialPageRoute(builder: (_) => const SupplierScreen()),
                 );
               },
               child: _buildFeatureCard(
@@ -107,12 +113,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // --- 4. Blockchain Card ---
+            // 4. Blockchain (existing)
             GestureDetector(
               onTap: () {
-                // Placeholder for now
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(context.tr('blockchain_coming_soon'))),
+                  SnackBar(
+                    content: Text(context.tr('blockchain_coming_soon')),
+                  ),
                 );
               },
               child: _buildFeatureCard(
@@ -124,38 +131,95 @@ class _HomeScreenState extends State<HomeScreen> {
                 iconColor: Colors.purple,
               ),
             ),
+
+            // ================= YOUR SECTION =================
+            const SizedBox(height: 20),
+            const Text(
+              "Smart Recommendation System",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+
+            // NLP Spare Part Search
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NlpSearchScreen(),
+                  ),
+                );
+              },
+              child: _buildFeatureCard(
+                context,
+                title: "NLP Spare Part Search",
+                subtitle: "Search parts using natural language",
+                icon: Icons.search,
+                color: Colors.green.shade100,
+                iconColor: Colors.green,
+              ),
+            ),
+
+            // Compatibility Recommender
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CompatibilityScreen(),
+                  ),
+                );
+              },
+              child: _buildFeatureCard(
+                context,
+                title: "Compatibility Recommender",
+                subtitle: "Find alternative compatible parts",
+                icon: Icons.sync_alt,
+                color: Colors.teal.shade100,
+                iconColor: Colors.teal,
+              ),
+            ),
+
+            // Inventory Optimization
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => InventoryOptimizationScreen(),
+                  ),
+                );
+              },
+              child: _buildFeatureCard(
+                context,
+                title: "Inventory Optimization",
+                subtitle: "Predict demand & optimize stock",
+                icon: Icons.inventory_2,
+                color: Colors.lime.shade100,
+                iconColor: Colors.lime.shade800,
+              ),
+            ),
           ],
         ),
       ),
 
-      // Bottom Navigation
+      // ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         selectedItemColor: const Color(0xFF2E7D32),
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          setState(() => _selectedIndex = index);
 
-          // Navigate to Scan Screen if middle button is pressed
           if (index == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ScanScreen()),
-            ).then((_) {
-              // Reset tab to Home when coming back
-              setState(() => _selectedIndex = 0);
-            });
-          }
-          // Navigate to Profile Screen if profile button is pressed
-          else if (index == 2) {
+              MaterialPageRoute(builder: (_) => const ScanScreen()),
+            ).then((_) => setState(() => _selectedIndex = 0));
+          } else if (index == 2) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
-            ).then((_) {
-              // Reset tab to Home when coming back
-              setState(() => _selectedIndex = 0);
-            });
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ).then((_) => setState(() => _selectedIndex = 0));
           }
         },
         items: const [
@@ -167,12 +231,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context,
-      {required String title,
-      required String subtitle,
-      required IconData icon,
-      required Color color,
-      required Color iconColor}) {
+  Widget _buildFeatureCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required Color iconColor,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -215,7 +281,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          const Icon(Icons.arrow_forward_ios,
+              size: 16, color: Colors.grey),
         ],
       ),
     );

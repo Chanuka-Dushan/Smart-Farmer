@@ -46,11 +46,16 @@ class ThemeService extends ChangeNotifier {
         foregroundColor: Colors.white,
         elevation: 2,
       ),
-      cardTheme: CardTheme(
+
+      // ✅ FIXED HERE
+      cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
+
       useMaterial3: true,
     );
   }
@@ -70,11 +75,16 @@ class ThemeService extends ChangeNotifier {
         foregroundColor: Colors.white,
         elevation: 2,
       ),
-      cardTheme: CardTheme(
-        color: const Color(0xFF1E1E1E),
+
+      // ✅ FIXED HERE
+      cardTheme: CardThemeData(
+        color: Color(0xFF1E1E1E),
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
+
       useMaterial3: true,
     );
   }
