@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 import '../services/theme_service.dart';
 

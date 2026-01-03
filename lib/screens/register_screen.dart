@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart' as latlong;
-import 'package:geolocator/geolocator.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
-import '../services/api_service.dart';
 
 // TODO: For production deployment, consider implementing:
 // 1. Proper geocoding service (Google Maps Platform, Mapbox, or OpenStreetMap Nominatim)

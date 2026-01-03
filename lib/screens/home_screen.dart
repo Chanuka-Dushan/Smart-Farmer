@@ -6,7 +6,6 @@ import 'predict_screen.dart';
 import 'scan_screen.dart';
 import 'supplier_screen.dart';
 import 'profile_screen.dart';
-import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 import '../services/api_service.dart';
 import 'package:provider/provider.dart';
