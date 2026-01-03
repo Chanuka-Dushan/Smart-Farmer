@@ -42,19 +42,19 @@ class _SparePartRequestScreenState extends State<SparePartRequestScreen> {
     try {
       final apiService = ApiService();
       
-      // 1. Create request
-      final result = await apiService.createSparePartRequest(
+      // Upload image first if exists, then create request with the image URL
+      String? imageUrl;
+      if (_image != null) {
+        imageUrl = await apiService.uploadSparePartImage(_image!.path);
+      }
+
+      // Create request with image URL
+      await apiService.createSparePartRequest(
         title: _titleController.text,
         description: _descriptionController.text,
-        category: _selectedCategory, // Add required category parameter
+        category: _selectedCategory,
+        imageUrl: imageUrl,
       );
-
-      final requestId = result['id'];
-
-      // 2. Upload image if exists
-      if (_image != null) {
-        await apiService.uploadSparePartImage(_image!.path);
-      }
 
       if (!mounted) return;
       

@@ -364,7 +364,16 @@ class ApiService {
         // Store authentication data
         await storage.write(key: 'auth_token', value: authResponse.accessToken);
         await storage.write(key: 'user_type', value: 'user');
-        await storage.write(key: 'user_id', value: authResponse.user.id.toString());
+        
+        // Handle different user types for storing user_id
+        String userId;
+        if (authResponse.user is Map<String, dynamic>) {
+          final userData = authResponse.user as Map<String, dynamic>;
+          userId = (userData['id'] ?? 0).toString();
+        } else {
+          userId = authResponse.user.id.toString();
+        }
+        await storage.write(key: 'user_id', value: userId);
         
         ErrorHandler.logInfo('Social login successful');
         return authResponse;
@@ -756,13 +765,53 @@ class ApiService {
     }
   }
 
+  /// Get seller's offers
+  Future<List<dynamic>> getMyOffers() async {
+    try {
+      final response = await _makeRequest('GET', '/api/spare-parts/my-offers');
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Fetched seller offers successfully');
+        return result is List ? List<dynamic>.from(result as List) : [];
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to fetch seller offers', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
   /// Upload spare part image
   Future<String> uploadSparePartImage(String imagePath) async {
     try {
-      // This would typically use multipart/form-data
-      // For now, return a placeholder implementation
-      ErrorHandler.logWarning('uploadSparePartImage not fully implemented');
-      return 'placeholder_image_url.jpg';
+      final uri = Uri.parse('$baseUrl/api/upload/spare-part-image');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add authentication header
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      
+      // Add image file
+      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        final imageUrl = result['url'] ?? result['image_url'];
+        ErrorHandler.logInfo('Spare part image uploaded successfully');
+        return imageUrl;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
     } catch (e) {
       final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
       ErrorHandler.logError('Failed to upload spare part image', e);

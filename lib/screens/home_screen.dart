@@ -26,12 +26,18 @@ class _HomeScreenState extends State<HomeScreen> {
   String _weatherDescription = "Loading weather...";
   String _locationName = "Detecting location...";
   IconData _weatherIcon = Icons.wb_cloudy_outlined;
+  
+  // Seller stats
+  int _totalOffers = 0;
+  int _activeRequests = 0;
+  int _completedDeals = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkOnboarding();
+      _loadSellerStats();
     });
     _updateGreeting();
     _loadLocationAndWeather();
@@ -41,6 +47,33 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.isSeller && auth.seller != null && !auth.seller!.onboardingCompleted) {
       Navigator.pushReplacementNamed(context, '/seller-onboarding');
+    }
+  }
+  
+  Future<void> _loadSellerStats() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (!auth.isSeller) return;
+    
+    try {
+      final apiService = ApiService();
+      // Fetch seller's offer count
+      final offersResponse = await apiService.getMyOffers();
+      if (offersResponse is List) {
+        setState(() {
+          _totalOffers = offersResponse.length;
+          _completedDeals = offersResponse.where((o) => o['status'] == 'accepted').length;
+        });
+      }
+      
+      // Fetch active requests count
+      final requestsResponse = await apiService.getSparePartRequests();
+      if (requestsResponse is List) {
+        setState(() {
+          _activeRequests = requestsResponse.where((r) => r['status'] == 'active').length;
+        });
+      }
+    } catch (e) {
+      // Silently fail, keep default values
     }
   }
 
@@ -342,7 +375,60 @@ class _HomeScreenState extends State<HomeScreen> {
             
             const SizedBox(height: 32),
             
+            // --- Seller Stats ---
+            if (Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      title: "Active Requests",
+                      value: _activeRequests.toString(),
+                      icon: Icons.work_outline,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      title: "My Offers",
+                      value: _totalOffers.toString(),
+                      icon: Icons.local_offer_outlined,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      title: "Completed",
+                      value: _completedDeals.toString(),
+                      icon: Icons.check_circle_outline,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      title: "Success Rate",
+                      value: _totalOffers > 0 ? "${((_completedDeals / _totalOffers) * 100).toStringAsFixed(0)}%" : "0%",
+                      icon: Icons.trending_up,
+                      color: Colors.purple,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+            ],
+            
             // --- Feature Cards ---
+            if (!Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
             _buildAnimatedCard(
               index: 1,
               child: _buildFeatureCard(
@@ -398,6 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+            ], // Close the conditional for farmer features
           ],
         ),
       ),
@@ -496,6 +583,59 @@ class _HomeScreenState extends State<HomeScreen> {
             const Icon(Icons.chevron_right_rounded, color: Colors.grey),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context,
+      {required String title,
+      required String value,
+      required IconData icon,
+      required Color color}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF252525) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 24, color: color),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            ),
+          ),
+        ],
       ),
     );
   }
