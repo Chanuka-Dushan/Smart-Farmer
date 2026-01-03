@@ -146,10 +146,10 @@ class TranslateSI {
     
     // LIFECYCLE PREDICTION
     'spare_part_analysis': 'අමතර කොටස් විශ්ලේෂණය',
+    'analyze_part': 'කොටස විශ්ලේෂණය කරන්න',
     'analyze_part_lifecycle': 'AI සහ දර්ශනය සමඟ කොටස් ජීවන චක්‍රය විශ්ලේෂණය කරන්න',
     'part_image': 'කොටසේ රූපය',
     'no_image_selected': 'රූපයක් තෝරා නොමැත',
-    'analyze_part': 'කොටස විශ්ලේෂණය කරන්න',
     'analysis_completed': 'විශ්ලේෂණය සාර්ථකව සම්පූර්ණ කරන ලදී!',
     'analysis_results': 'විශ්ලේෂණ ප්‍රතිඵල',
     'ai_knowledge': 'AI දැනුම',

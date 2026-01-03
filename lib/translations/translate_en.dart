@@ -146,6 +146,7 @@ class TranslateEN {
     
     // LIFECYCLE PREDICTION
     'spare_part_analysis': 'Spare Part Analysis',
+    'analyze_part': 'Analyze Part',
     'analyze_part_lifecycle': 'Analyze part lifecycle with AI & vision',
     'ai_knowledge': 'AI Knowledge',
     'visual_scan': 'Visual Scan',
