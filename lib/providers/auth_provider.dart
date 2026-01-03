@@ -394,6 +394,33 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Update seller location
+  Future<bool> updateSellerLocation({
+    required String latitude,
+    required String longitude,
+    String? shopLocationName,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _seller = await _apiService.updateSellerLocation(
+        latitude: latitude,
+        longitude: longitude,
+        shopLocationName: shopLocationName,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Complete seller onboarding
   Future<bool> completeSellerOnboarding({
     String? businessDescription,
@@ -510,9 +537,16 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // This would normally upload the image to server
-      // For now, return success as placeholder
-      await Future.delayed(Duration(milliseconds: 500)); // Simulate API call
+      // Upload image to server and get URL
+      final imageUrl = await _apiService.uploadProfilePicture(imagePath);
+      
+      // Update local data based on user type
+      if (_user != null) {
+        _user = _user!.copyWith(profilePictureUrl: imageUrl);
+      } else if (_seller != null) {
+        _seller = _seller!.copyWith(logoUrl: imageUrl);
+      }
+      
       _isLoading = false;
       notifyListeners();
       return true;

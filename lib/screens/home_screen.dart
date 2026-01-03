@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
                     backgroundImage: picUrl != null 
-                      ? NetworkImage(picUrl.startsWith('http') ? picUrl : '${ApiService().baseUrl}$picUrl') 
+                      ? NetworkImage(picUrl)  // Use URL directly (supports full Spaces URLs)
                       : null,
                     child: picUrl == null ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)) : null,
                   ),

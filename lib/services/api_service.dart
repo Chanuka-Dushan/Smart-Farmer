@@ -819,6 +819,40 @@ class ApiService {
     }
   }
 
+  /// Upload profile picture
+  Future<String> uploadProfilePicture(String imagePath) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/upload/profile-picture');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add authentication header
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      
+      // Add image file
+      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        final imageUrl = result['url'] ?? result['image_url'] ?? result['profile_picture_url'];
+        ErrorHandler.logInfo('Profile picture uploaded successfully');
+        return imageUrl;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to upload profile picture', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
   /// Delete user account
   Future<void> deleteAccount() async {
     try {
