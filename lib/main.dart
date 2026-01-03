@@ -24,6 +24,16 @@ import 'services/l10n.dart';
 import 'services/theme_service.dart';
 import 'providers/auth_provider.dart';
 
+import 'screens/nlp_search_screen.dart';
+import 'screens/compatibility_screen.dart';
+import 'screens/inventory_optimization_screen.dart';
+import 'screens/part_detail_screen.dart';
+import 'screens/comparison_screen.dart';
+import 'screens/inventory_details_screen.dart';
+import 'screens/high_demand_parts_screen.dart';
+import 'screens/seasonal_demand_machines_screen.dart';
+
+
 Future<void> main() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,17 +96,28 @@ class SmartSparePartApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/language': (context) => const LanguageSelectionScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => HomeScreen(),
         '/login': (context) => const LoginScreen(),   
         '/register': (context) => const RegisterScreen(),
         '/seller-register': (context) => const SellerRegisterScreen(),
         '/camera': (context) => const CameraScanScreen(),
         '/settings': (context) => const SettingsScreen(),
+
+        '/nlp-search': (context) => NlpSearchScreen(),
+        '/part-detail': (context) => PartDetailScreen(),
+        '/comparison': (context) => ComparisonScreen(),
+        '/compatibility': (context) => CompatibilityScreen(),
+        '/inventory-optimization': (context) => InventoryOptimizationScreen(),
+        '/inventory-details': (context) => InventoryDetailsScreen(),
+        '/high-demand-results': (context) => const HighDemandResultScreen(),
+        '/seasonal-machines': (context) => const SeasonalMachineScreen(),
+
         '/seller-onboarding': (context) => const SellerOnboardingScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/find-spare-part': (context) => const SparePartRequestScreen(),
         '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
         '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
+
       },
     );
   }

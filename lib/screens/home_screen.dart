@@ -12,6 +12,10 @@ import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 
+import 'nlp_search_screen.dart';
+import 'compatibility_screen.dart';
+import 'inventory_optimization_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -268,9 +272,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
               },
             ),
+
           ],
         ),
       ),
+
+          
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
@@ -485,6 +493,60 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             ], // Close the conditional for farmer features
+
+             // ================= YOUR SECTION =================
+          const SizedBox(height: 20),
+          const Text(
+            "Smart Recommendation System",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+
+          _buildFeatureCard(
+            context,
+            title: "NLP Spare Part Search",
+            subtitle: "Search parts using natural language",
+            icon: Icons.search,
+            color: Colors.green.shade100,
+            iconColor: Colors.green,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NlpSearchScreen()),
+              );
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Compatibility Recommender",
+            subtitle: "Find alternative compatible parts",
+            icon: Icons.sync_alt,
+            color: Colors.teal.shade100,
+            iconColor: Colors.teal,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CompatibilityScreen()),
+              );
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Inventory Optimization",
+            subtitle: "Predict demand & optimize stock",
+            icon: Icons.inventory_2,
+            color: Colors.lime.shade100,
+            iconColor: Colors.lime.shade800,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => InventoryOptimizationScreen()),
+              );
+            },
+          ),
+          
           ],
         ),
       ),
