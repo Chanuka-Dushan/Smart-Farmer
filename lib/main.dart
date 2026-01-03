@@ -32,6 +32,7 @@ import 'screens/comparison_screen.dart';
 import 'screens/inventory_details_screen.dart';
 import 'screens/high_demand_parts_screen.dart';
 import 'screens/seasonal_demand_machines_screen.dart';
+import 'screens/lifecycle_prediction_screen.dart';
 
 
 Future<void> main() async {
@@ -111,6 +112,7 @@ class SmartSparePartApp extends StatelessWidget {
         '/inventory-details': (context) => InventoryDetailsScreen(),
         '/high-demand-results': (context) => const HighDemandResultScreen(),
         '/seasonal-machines': (context) => const SeasonalMachineScreen(),
+        '/lifecycle-prediction': (context) => const LifecyclePredictionScreen(),
 
         '/seller-onboarding': (context) => const SellerOnboardingScreen(),
         '/profile': (context) => const ProfileScreen(),

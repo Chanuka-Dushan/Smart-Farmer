@@ -15,6 +15,8 @@ import '../providers/auth_provider.dart';
 import 'nlp_search_screen.dart';
 import 'compatibility_screen.dart';
 import 'inventory_optimization_screen.dart';
+import 'lifecycle_prediction_screen.dart';
+import 'lifecycle_prediction_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -459,7 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.document_scanner_rounded,
                 color: Colors.blue.withOpacity(0.1),
                 iconColor: Colors.blue,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ScanScreen())),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
               ),
             ),
 
@@ -490,6 +492,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     SnackBar(content: Text(context.l10n.tr('blockchain_coming_soon'))),
                   );
                 },
+              ),
+            ),
+
+            _buildAnimatedCard(
+              index: 5,
+              child: _buildFeatureCard(
+                context,
+                title: context.tr('spare_part_analysis'),
+                subtitle: context.tr('analyze_part_lifecycle'),
+                icon: Icons.analytics_rounded,
+                color: Colors.teal.withOpacity(0.1),
+                iconColor: Colors.teal,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
               ),
             ),
             ], // Close the conditional for farmer features

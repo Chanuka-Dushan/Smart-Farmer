@@ -20,6 +20,7 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isSeller => _userType == 'seller';
+  ApiService get apiService => _apiService;
 
   AuthProvider() {
     checkAuthStatus();

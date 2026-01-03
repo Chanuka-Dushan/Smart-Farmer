@@ -144,6 +144,21 @@ class TranslateEN {
     'location_permissions_permanently_denied': 'Location permissions permanently denied. Enable in settings.',
     'please_enter_business_name': 'Please enter business name',
     
+    // LIFECYCLE PREDICTION
+    'spare_part_analysis': 'Spare Part Analysis',
+    'analyze_part_lifecycle': 'Analyze part lifecycle with AI & vision',
+    'ai_knowledge': 'AI Knowledge',
+    'visual_scan': 'Visual Scan',
+    'analysis_model': 'Analysis Model',
+    'remaining_life': 'Remaining Life',
+    'wear_detected': 'Wear Detected',
+    'analysis_completed': 'Analysis completed successfully!',
+    'analysis_results': 'Analysis Results',
+    'please_select_image': 'Please select an image',
+    'please_enter_part_name': 'Please enter part name',
+    'please_enter_usage_hours': 'Please enter usage hours',
+    'please_enter_valid_hours': 'Please enter valid hours (positive number)',
+    
     // COMMON
     'get_started': 'Get Started',
     'skip': 'Skip',

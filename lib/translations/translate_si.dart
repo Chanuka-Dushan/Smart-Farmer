@@ -86,7 +86,6 @@ class TranslateSI {
     // SETTINGS SCREEN
     'settings': 'සැකසුම්',
     'profile_information': 'පැතිකඩ තොරතුරු',
-
     'optional': 'විකල්ප',
     'password_min_length': 'අවම අක්ෂර 6 ක්',
     'language': 'භාෂාව',
@@ -145,6 +144,24 @@ class TranslateSI {
     'location_permissions_permanently_denied': 'ස්ථාන අවසර ස්ථිරවම ප්‍රතික්ෂේප කරන ලදී. සැකසුම්වල සක්‍රීය කරන්න.',
     'please_enter_business_name': 'කරුණාකර ව්‍යාපාර නම ඇතුළත් කරන්න',
     
+    // LIFECYCLE PREDICTION
+    'spare_part_analysis': 'අමතර කොටස් විශ්ලේෂණය',
+    'analyze_part_lifecycle': 'AI සහ දර්ශනය සමඟ කොටස් ජීවන චක්‍රය විශ්ලේෂණය කරන්න',
+    'part_image': 'කොටසේ රූපය',
+    'no_image_selected': 'රූපයක් තෝරා නොමැත',
+    'analyze_part': 'කොටස විශ්ලේෂණය කරන්න',
+    'analysis_completed': 'විශ්ලේෂණය සාර්ථකව සම්පූර්ණ කරන ලදී!',
+    'analysis_results': 'විශ්ලේෂණ ප්‍රතිඵල',
+    'ai_knowledge': 'AI දැනුම',
+    'visual_scan': 'දෘශ්‍ය පරිලෝකනය',
+    'wear_detected': 'පැළඳ සිටීම අනාවරණය කරන ලදී',
+    'analysis_model': 'විශ්ලේෂණ ආකෘතිය',
+    'remaining_life': 'ඉතිරි ජීවිතය',
+    'please_select_image': 'කරුණාකර රූපයක් තෝරන්න',
+    'please_enter_part_name': 'කරුණාකර කොටසේ නම ඇතුළත් කරන්න',
+    'please_enter_usage_hours': 'කරුණාකර භාවිතා කරන පැය ඇතුළත් කරන්න',
+    'please_enter_valid_hours': 'කරුණාකර නීතික පැය ඇතුළත් කරන්න (හිතාකාරී සංඛ්‍යාවක්)',
+    
     // COMMON
     'get_started': 'ආරම්භ කරන්න',
     'skip': 'මඟහරින්න',
@@ -166,6 +183,22 @@ class TranslateSI {
     'good_afternoon': 'සුභ සන්ධ්‍යාවක්',
     'good_evening': 'සුභ සන්ධ්‍යාවක්',
     'good_night': 'සුභ රාත්‍රියක්',
+    
+    // VALIDATION MESSAGES
+    'please_enter_email': 'කරුණාකර ඔබේ ඊමේල් ඇතුළත් කරන්න',
+    'please_enter_valid_email': 'කරුණාකර වලංගු ඊමේල් ඇතුළත් කරන්න',
+    'please_enter_password': 'කරුණාකර ඔබේ මුරපදය ඇතුළත් කරන්න',
+    'forgot_password': 'මුරපදය අමතකද?',
+    'or_continue_with': 'නැතිනම් සමඟ ඉදිරියට යන්න',
+    'enter_email_to_reset': 'මුරපද යළි සැකසීමේ කේතයක් ලබාගැනීමට ඔබගේ ලියාපදිංචි ඊමේල් ඇතුළත් කරන්න.',
+    'send_reset_token': 'යළි සැකසීමේ කේතය යවන්න',
+    'reset_token_sent': 'යළි සැකසීමේ කේතය ඔබගේ ඊමේල් වෙත යවන ලදී!',
+    'enter_token': '6-අංක කේතය ඇතුළත් කරන්න',
+    'password_reset_success': 'මුරපදය සාර්ථකව යළි සැකසන ලදී!',
+    'invalid_token': 'වලංගු නොවන හෝ කල් ඉකුත් වූ කේතයක්',
+    'remove_picture': 'පින්තූරය ඉවත් කරන්න',
+    'failed_to_send_reset': 'යළි සැකසීමේ ඊමේල් යැවීම අසාර්ථකයි',
+    'address': 'ලිපිනය',
     
     // LOGIN ERRORS
     'login_failed': 'පිවිසීම අසාර්ථකයි. කරුණාකර නැවත උත්සාහ කරන්න.',
