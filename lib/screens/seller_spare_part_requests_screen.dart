@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../services/l10n_extension.dart';
 
 class SellerSparePartRequestsScreen extends StatefulWidget {
   const SellerSparePartRequestsScreen({super.key});

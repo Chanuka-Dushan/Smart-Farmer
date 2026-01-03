@@ -297,8 +297,8 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
                   right: 16,
                   child: FloatingActionButton(
                     onPressed: _getCurrentLocation,
-                    child: const Icon(Icons.my_location),
                     tooltip: 'Go to my location',
+                    child: const Icon(Icons.my_location),
                   ),
                 ),
 

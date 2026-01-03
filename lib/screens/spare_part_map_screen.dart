@@ -135,7 +135,7 @@ class _SparePartMapScreenState extends State<SparePartMapScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(seller['business_name'] ?? 'Store', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text('${distanceKm} km away', style: const TextStyle(color: Color(0xFF2E7D32))),
+            Text('$distanceKm km away', style: const TextStyle(color: Color(0xFF2E7D32))),
             const SizedBox(height: 12),
             Text('Price: ${offer['price']}', style: const TextStyle(fontSize: 18, color: Colors.orange)),
             Text(offer['description'] ?? ''),

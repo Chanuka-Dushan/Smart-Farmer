@@ -286,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           trailing: Switch(
                             value: true,
                             onChanged: (value) {},
-                            activeColor: const Color(0xFF2E7D32),
+                            activeThumbColor: const Color(0xFF2E7D32),
                           ),
                         ),
                         const Divider(height: 1),
@@ -298,7 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onChanged: (value) {
                               Provider.of<ThemeService>(context, listen: false).toggleTheme();
                             },
-                            activeColor: const Color(0xFF2E7D32),
+                            activeThumbColor: const Color(0xFF2E7D32),
                           ),
                         ),
                       ],

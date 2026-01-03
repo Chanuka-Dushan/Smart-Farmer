@@ -31,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  bool _isLocationLoading = false;
+  final bool _isLocationLoading = false;
 
   @override
   void initState() {
@@ -318,7 +318,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       final success = await authProvider.socialLogin(
-        email: email ?? "user_${provider}@example.com",
+        email: email ?? "user_$provider@example.com",
         firstname: firstName ?? "Social",
         lastname: lastName ?? provider.toUpperCase(),
         socialId: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",

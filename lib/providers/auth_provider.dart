@@ -126,9 +126,9 @@ class AuthProvider with ChangeNotifier {
       if (userData is Map<String, dynamic>) {
         userMap = userData;
       } else if (userData is User) {
-        userMap = (userData as User).toJson();
+        userMap = (userData).toJson();
       } else if (userData is Seller) {
-        userMap = (userData as Seller).toJson();
+        userMap = (userData).toJson();
       } else {
         throw Exception('Invalid user data format');
       }

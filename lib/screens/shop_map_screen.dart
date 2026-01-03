@@ -227,8 +227,8 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
                   _getCurrentLocation();
                 }
               },
-              child: const Icon(Icons.my_location),
               tooltip: 'Go to my location',
+              child: const Icon(Icons.my_location),
             ),
           ),
 

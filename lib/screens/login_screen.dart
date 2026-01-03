@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final success = await authProvider.socialLogin(
-        email: email ?? "user_${provider}@example.com",
+        email: email ?? "user_$provider@example.com",
         firstname: firstName ?? "Social",
         lastname: lastName ?? provider.toUpperCase(),
         socialId: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
