@@ -86,7 +86,9 @@ class TranslateTA {
     // SETTINGS SCREEN
     'settings': 'அமைப்புகள்',
     'profile_information': 'சுயவிவர தகவல்',
-    'phone_number': 'தொலைபேசி எண்',
+    'phone': 'தொலைபேசி',
+    'optional': 'விருப்ப',
+    'password_min_length': 'குறைந்தது 6 எழுத்துகள்',
     'language': 'மொழி',
     'app_settings': 'பயன்பாட்டு அமைப்புகள்',
     'notifications': 'அறிவிப்புகள்',
@@ -125,5 +127,26 @@ class TranslateTA {
     'get_started': 'தொடங்குங்கள்',
     'skip': 'தவிர்க்கவும்',
     'next': 'அடுத்தது',
+    
+    // SPARE PARTS
+    'find_spare_part': 'உதிரி பாகத்தைக் கண்டறியவும்',
+    'describe_part_header': 'நீங்கள் தேவையான பாகத்தை விவரிக்கவும்',
+    'part_title': 'பாகத்தின் தலைப்பு',
+    'part_description': 'பாகத்தின் விவரம்',
+    'please_enter_title': 'தயவுசெய்து ஒரு தலைப்பை உள்ளீடு செய்யவும்',
+    'please_enter_description': 'தயவுசெய்து ஒரு விவரத்தை உள்ளீடு செய்யவும்',
+    'upload_image': 'படத்தை பதிவேற்றவும்',
+    'send_request': 'கோரிக்கையை அனுப்பவும்',
+    'request_sent_success': 'கோரிக்கை வெற்றிகரமாக அனுப்பப்பட்டது!',
+    
+    // GREETINGS
+    'good_morning': 'காலை வணக்கம்',
+    'good_afternoon': 'மதிய வணக்கம்',
+    'good_evening': 'மாலை வணக்கம்',
+    'good_night': 'இரவு வணக்கம்',
+    
+    // LOGIN ERRORS
+    'login_failed': 'உள்நுழைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.',
+    'network_error': 'பிணைய பிழை. உங்கள் இணைய இணைப்பைச் சரிபார்க்கவும்.',
   };
 }

@@ -33,7 +33,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
       if (status.isDenied || status.isPermanentlyDenied) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('camera_error'))),
+          SnackBar(content: Text(context.l10n.tr('camera_error'))),
         );
         return;
       }
@@ -42,7 +42,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
       if (_cameras.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('no_camera_found'))),
+          SnackBar(content: Text(context.l10n.tr('no_camera_found'))),
         );
         return;
       }
@@ -62,7 +62,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${context.tr('camera_error')}: $e")),
+        SnackBar(content: Text("${context.l10n.tr('camera_error')}: $e")),
       );
     }
   }
@@ -88,7 +88,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> {
       setState(() => _isProcessing = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${context.tr('capture_failed')}: $e")),
+        SnackBar(content: Text("${context.l10n.tr('capture_failed')}: $e")),
       );
     }
   }

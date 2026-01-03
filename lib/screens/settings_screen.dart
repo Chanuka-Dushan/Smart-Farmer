@@ -62,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.tr('profile_updated'))),
+      SnackBar(content: Text(context.l10n.tr('profile_updated'))),
     );
   }
 

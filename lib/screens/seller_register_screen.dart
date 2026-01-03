@@ -5,30 +5,30 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class SellerRegisterScreen extends StatefulWidget {
+  const SellerRegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<SellerRegisterScreen> createState() => _SellerRegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _businessNameController = TextEditingController();
   final _firstnameController = TextEditingController();
   final _lastnameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
 
   @override
   void dispose() {
+    _businessNameController.dispose();
     _firstnameController.dispose();
     _lastnameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -37,29 +37,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    final success = await authProvider.register(
-      firstname: _firstnameController.text.trim(),
-      lastname: _lastnameController.text.trim(),
+    final success = await authProvider.registerSeller(
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      businessName: _businessNameController.text.trim(),
+      ownerFirstname: _firstnameController.text.trim(),
+      ownerLastname: _lastnameController.text.trim(),
       phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
     );
 
     if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('account_created')),
+        const SnackBar(
+          content: Text("Seller account created! Please complete your shop setup."),
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pushReplacementNamed(context, '/home');
+      // Navigate to seller onboarding
+      Navigator.pushReplacementNamed(context, '/seller-onboarding');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? context.tr('registration_failed')),
+          content: Text(authProvider.errorMessage ?? "Registration failed"),
           backgroundColor: Colors.red,
         ),
       );
@@ -81,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           scopes: ['email'],
           serverClientId: '941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com',
         );
-        await googleSignIn.signOut();
+        await googleSignIn.signOut(); // Force account selection
         final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
         if (googleUser == null) return;
 
@@ -106,33 +107,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final success = await authProvider.socialLogin(
         provider: provider,
-        idToken: socialId,
-        email: email,
-        name: "$firstname $lastname",
+        idToken: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        email: email ?? "seller_${provider}@example.com",
+        name: "${firstname ?? "Social"} ${lastname ?? provider.toUpperCase()}",
         photoUrl: profilePictureUrl,
+        userType: 'seller',
+        businessName: '${firstname ?? "Social"}\'s Shop',
       );
 
       if (!mounted) return;
       if (success) {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        if (authProvider.seller != null && !authProvider.seller!.onboardingCompleted) {
+          Navigator.pushReplacementNamed(context, '/seller-onboarding');
+        } else {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? "Social login failed")),
-        );
+        if (authProvider.errorMessage?.toLowerCase().contains('banned') ?? false) {
+          _showBannedDialog(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authProvider.errorMessage ?? "Social login failed")),
+          );
+        }
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      if (e.toString().toLowerCase().contains('banned')) {
+        _showBannedDialog(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
+  }
+
+  void _showBannedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.report_problem, color: Colors.red, size: 30),
+            SizedBox(width: 10),
+            Text("Access Denied", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Your account has been restricted.",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "An administrator has suspended your access for violating our terms of service or safety guidelines.",
+              style: TextStyle(color: Colors.grey),
+            ),
+            SizedBox(height: 16),
+            Text(
+              "If you believe this is a mistake, please reach out to our support team at support@smartfarmer.com",
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Understand", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Register as Farmer'),
+        title: const Text('Register as Seller'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -144,8 +201,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
+                Icon(
+                  Icons.store_rounded,
+                  size: 64,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.green[400]
+                      : const Color(0xFF2E7D32),
+                ),
+                const SizedBox(height: 16),
                 Text(
-                  'Create Farmer Account',
+                  "Create Seller Account",
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -153,11 +218,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Buy farm equipment & spare parts',
+                  "Sell farm equipment & spare parts",
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
 
@@ -203,7 +268,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Basic Information
+                TextFormField(
+                  controller: _businessNameController,
+                  decoration: InputDecoration(
+                    labelText: 'Business/Shop Name *',
+                    hintText: 'e.g., Green Farm Supplies',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.store),
+                    filled: true,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[50],
+                  ),
+                  validator: (value) => value!.isEmpty ? 'Please enter your business name' : null,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '📍 You can add your business location and logo after registration',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _firstnameController,
                   decoration: InputDecoration(
@@ -217,12 +307,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? Colors.grey[800]
                         : Colors.grey[50],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_first_name');
-                    }
-                    return null;
-                  },
+                  validator: (value) => value!.isEmpty ? 'Please enter first name' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -238,12 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? Colors.grey[800]
                         : Colors.grey[50],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_last_name');
-                    }
-                    return null;
-                  },
+                  validator: (value) => value!.isEmpty ? 'Please enter last name' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -261,12 +341,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         : Colors.grey[50],
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_email');
-                    }
-                    if (!value.contains('@')) {
-                      return context.tr('please_enter_valid_email');
-                    }
+                    if (value == null || value.isEmpty) return context.tr('please_enter_email');
+                    if (!value.contains('@')) return context.tr('please_enter_valid_email');
                     return null;
                   },
                 ),
@@ -280,19 +356,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.lock),
-                    helperText: context.tr('password_min_length'),
                     filled: true,
                     fillColor: Theme.of(context).brightness == Brightness.dark
                         ? Colors.grey[800]
                         : Colors.grey[50],
+                    helperText: 'Minimum 6 characters',
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_password');
-                    }
-                    if (value.length < 6) {
-                      return context.tr('password_too_short');
-                    }
+                    if (value == null || value.isEmpty) return context.tr('please_enter_password');
+                    if (value.length < 6) return context.tr('password_too_short');
                     return null;
                   },
                 ),
@@ -301,7 +373,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
-                    labelText: '${context.tr('phone')} (${context.tr('optional')})',
+                    labelText: 'Phone Number (Optional)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -312,24 +384,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         : Colors.grey[50],
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _addressController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: '${context.tr('address')} (${context.tr('optional')})',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.location_on),
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
+                
+                const SizedBox(height: 32),
+                
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
                     return authProvider.isLoading
@@ -340,26 +397,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               backgroundColor: const Color(0xFF2E7D32),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            child: Text(
-                              context.tr('register'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            child: const Text("Register as Seller", style: TextStyle(fontSize: 18)),
                           );
                   },
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: () => Navigator.pop(context),
                   child: Text(context.tr('already_have_account')),
                 ),
               ],

@@ -44,6 +44,12 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   firebase_core: ^2.24.2
   firebase_messaging: ^14.7.9
+  flutter_local_notifications: ^17.0.0  # Added for better notification handling
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+  geolocator: ^11.0.0
+  google_sign_in: ^6.2.1  # For Google authentication
+  flutter_facebook_auth: ^7.0.1  # For Facebook authentication
 
 dev_dependencies:
   flutter_test:

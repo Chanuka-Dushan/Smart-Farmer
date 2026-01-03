@@ -45,7 +45,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
       Navigator.pushReplacementNamed(context, '/onboarding');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('please_select_language'))),
+        SnackBar(content: Text(context.l10n.tr('please_select_language'))),
       );
     }
   }

@@ -86,7 +86,9 @@ class TranslateEN {
     // SETTINGS SCREEN
     'settings': 'Settings',
     'profile_information': 'Profile Information',
-    'phone_number': 'Phone Number',
+    'phone': 'Phone',
+    'optional': 'Optional',
+    'password_min_length': 'Minimum 6 characters',
     'language': 'Language',
     'app_settings': 'App Settings',
     'notifications': 'Notifications',
@@ -125,5 +127,44 @@ class TranslateEN {
     'get_started': 'Get Started',
     'skip': 'Skip',
     'next': 'Next',
+    'forgot_password': 'Forgot Password?',
+    'or_continue_with': 'Or continue with',
+    'enter_email_to_reset': 'Enter your registered email to receive a password reset token.',
+    'send_reset_token': 'Send Reset Token',
+    'reset_token_sent': 'Reset token sent to your email!',
+    'enter_token': 'Enter 6-digit Token',
+    'please_enter_token': 'Please enter the token',
+    'password_reset_success': 'Password reset successfully!',
+    'invalid_token': 'Invalid or expired token',
+    'remove_picture': 'Remove Picture',
+    'failed_to_send_reset': 'Failed to send reset email',
+    'address': 'Address',
+    'please_enter_email': 'Please enter your email',
+    'please_enter_valid_email': 'Please enter a valid email',
+    'please_enter_password': 'Please enter your password',
+    
+    // SPARE PARTS
+    'find_spare_part': 'Find Spare Part',
+    'describe_part_header': 'Describe the Part You Need',
+    'part_title': 'Part Title',
+    'part_description': 'Part Description',
+    'please_enter_title': 'Please enter a title',
+    'please_enter_description': 'Please enter a description',
+    'upload_image': 'Upload Image',
+    'send_request': 'Send Request',
+    'request_sent_success': 'Request sent successfully!',
+    'my_spare_part_requests': 'My Spare Part Requests',
+    'no_requests_found': 'No requests found',
+    'no_offers_yet': 'No offers yet',
+    
+    // GREETINGS
+    'good_morning': 'Good Morning',
+    'good_afternoon': 'Good Afternoon',
+    'good_evening': 'Good Evening',
+    'good_night': 'Good Night',
+    
+    // LOGIN ERRORS
+    'login_failed': 'Login failed. Please try again.',
+    'network_error': 'Network error. Please check your internet connection.',
   };
 }

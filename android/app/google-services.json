@@ -12,7 +12,20 @@
           "package_name": "com.example.smart_farmer"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "941688275134-6eatng2nava41o25dcdms43knf1o554u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smart_farmer",
+            "certificate_hash": "f0b5989e0cbd5f3d149701b944cde24b19d9573b"
+          }
+        },
+        {
+          "client_id": "941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDQJy1jMwBxcSlS7GwqEdRWGpYFfo6ih2E"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "941688275134-fscgigpfs5do32qtn6ls40070468ivhp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.smartFarmer"
+              }
+            }
+          ]
         }
       }
     }

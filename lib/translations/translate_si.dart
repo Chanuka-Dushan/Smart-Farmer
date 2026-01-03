@@ -86,7 +86,9 @@ class TranslateSI {
     // SETTINGS SCREEN
     'settings': 'සැකසුම්',
     'profile_information': 'පැතිකඩ තොරතුරු',
-    'phone_number': 'දුරකථන අංකය',
+    'phone': 'දුරකථනය',
+    'optional': 'විකල්ප',
+    'password_min_length': 'අවම අක්ෂර 6 ක්',
     'language': 'භාෂාව',
     'app_settings': 'යෙදුම් සැකසුම්',
     'notifications': 'දැනුම්දීම්',
@@ -125,5 +127,26 @@ class TranslateSI {
     'get_started': 'ආරම්භ කරන්න',
     'skip': 'මඟහරින්න',
     'next': 'ඊළඟ',
+    
+    // SPARE PARTS
+    'find_spare_part': 'අමතර කොටස සොයන්න',
+    'describe_part_header': 'ඔබට අවශ්‍ය කොටස විස්තර කරන්න',
+    'part_title': 'කොටසේ මාතෘකාව',
+    'part_description': 'කොටසේ විස්තරය',
+    'please_enter_title': 'කරුණාකර මාතෘකාවක් ඇතුල් කරන්න',
+    'please_enter_description': 'කරුණාකර විස්තරයක් ඇතුල් කරන්න',
+    'upload_image': 'රූපය උඩුගත කරන්න',
+    'send_request': 'ඉල්ලීම යවන්න',
+    'request_sent_success': 'ඉල්ලීම සාර්ථකව යවන ලදී!',
+    
+    // GREETINGS
+    'good_morning': 'සුභ උදෑසනක්',
+    'good_afternoon': 'සුභ සන්ධ්‍යාවක්',
+    'good_evening': 'සුභ සන්ධ්‍යාවක්',
+    'good_night': 'සුභ රාත්‍රියක්',
+    
+    // LOGIN ERRORS
+    'login_failed': 'පිවිසීම අසාර්ථකයි. කරුණාකර නැවත උත්සාහ කරන්න.',
+    'network_error': 'ජාල දෝෂයක්. කරුණාකර ඔබේ අන්තර්ජාල සම්බන්ධතාවය පරීක්ෂා කරන්න.',
   };
 }
