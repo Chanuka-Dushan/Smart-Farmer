@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
+import '../utils/error_handler.dart';
 
 class SellerRegisterScreen extends StatefulWidget {
   const SellerRegisterScreen({super.key});
@@ -136,8 +137,12 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
       if (e.toString().toLowerCase().contains('banned')) {
         _showBannedDialog(context);
       } else {
+        final errorMessage = ErrorHandler.getUserFriendlyMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

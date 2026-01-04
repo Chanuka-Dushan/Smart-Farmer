@@ -424,6 +424,8 @@ class AuthProvider with ChangeNotifier {
 
   /// Complete seller onboarding
   Future<bool> completeSellerOnboarding({
+    String? businessName,
+    String? businessAddress,
     String? businessDescription,
     String? latitude,
     String? longitude,
@@ -434,10 +436,14 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Update seller profile with business info
       _seller = await _apiService.updateSellerProfile(
+        businessName: businessName,
+        businessAddress: businessAddress,
         businessDescription: businessDescription,
       );
       
+      // Update location if provided
       if (latitude != null && longitude != null) {
         _seller = await _apiService.updateSellerLocation(
           latitude: latitude,
@@ -541,11 +547,11 @@ class AuthProvider with ChangeNotifier {
       // Upload image to server and get URL
       final imageUrl = await _apiService.uploadProfilePicture(imagePath);
       
-      // Update local data based on user type
-      if (_user != null) {
-        _user = _user!.copyWith(profilePictureUrl: imageUrl);
-      } else if (_seller != null) {
-        _seller = _seller!.copyWith(logoUrl: imageUrl);
+      // Refresh profile from server to get updated data
+      if (_userType == 'user') {
+        _user = await _apiService.getProfile();
+      } else if (_userType == 'seller') {
+        _seller = await _apiService.getSellerProfile();
       }
       
       _isLoading = false;

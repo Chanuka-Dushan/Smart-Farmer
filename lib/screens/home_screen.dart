@@ -207,10 +207,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   accountEmail: Text(email),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
-                    backgroundImage: picUrl != null 
-                      ? NetworkImage(picUrl)  // Use URL directly (supports full Spaces URLs)
+                    backgroundImage: picUrl != null && picUrl.isNotEmpty
+                      ? NetworkImage(
+                          picUrl,
+                          headers: {
+                            'Cache-Control': 'no-cache',
+                          },
+                        )
                       : null,
-                    child: picUrl == null ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)) : null,
+                    child: picUrl == null || picUrl.isEmpty
+                      ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32))
+                      : null,
                   ),
                   decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
                 );

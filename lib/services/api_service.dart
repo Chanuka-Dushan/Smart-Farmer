@@ -37,6 +37,7 @@ class ApiService {
     Map<String, dynamic>? body,
     bool includeAuth = true,
     int timeoutSeconds = 30,
+    bool skipLogoutOn401 = false,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
@@ -75,8 +76,8 @@ class ApiService {
       
       ErrorHandler.logInfo('Response status: ${response.statusCode}');
       
-      if (response.statusCode == 401) {
-        // Token expired, logout user
+      if (response.statusCode == 401 && !skipLogoutOn401) {
+        // Token expired, logout user (but not for login/register endpoints)
         await logout();
         throw Exception('Session expired. Please login again.');
       }
@@ -125,7 +126,8 @@ class ApiService {
             'email': email,
             'password': password,
           },
-          includeAuth: false);
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on login failure
 
       if (response.statusCode == 200) {
         final jsonData = _parseJsonResponse(response);
@@ -178,7 +180,8 @@ class ApiService {
             if (address?.isNotEmpty == true) 'address': address,
             if (fcmToken?.isNotEmpty == true) 'fcm_token': fcmToken,
           },
-          includeAuth: false);
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on registration failure
 
       if (response.statusCode == 201) {
         final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
@@ -239,7 +242,9 @@ class ApiService {
       if (fcmToken?.isNotEmpty == true) body['fcm_token'] = fcmToken!;
 
       final response = await _makeRequest('POST', '/api/sellers/register',
-          body: body, includeAuth: false);
+          body: body, 
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on registration failure
 
       if (response.statusCode == 201) {
         final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
@@ -279,7 +284,8 @@ class ApiService {
             'email': email,
             'password': password,
           },
-          includeAuth: false);
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on login failure
 
       if (response.statusCode == 200) {
         final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
