@@ -27,11 +27,12 @@ import 'providers/auth_provider.dart';
 import 'screens/nlp_search_screen.dart';
 import 'screens/compatibility_screen.dart';
 import 'screens/inventory_optimization_screen.dart';
-import 'screens/part_detail_screen.dart';
 import 'screens/comparison_screen.dart';
 import 'screens/inventory_details_screen.dart';
 import 'screens/high_demand_parts_screen.dart';
 import 'screens/seasonal_demand_machines_screen.dart';
+import 'screens/alternative_parts_screen.dart';
+import 'screens/part_search_result_screen.dart';
 
 
 Future<void> main() async {
@@ -104,7 +105,8 @@ class SmartSparePartApp extends StatelessWidget {
         '/settings': (context) => const SettingsScreen(),
 
         '/nlp-search': (context) => NlpSearchScreen(),
-        '/part-detail': (context) => PartDetailScreen(),
+        '/part-search-result': (context) => PartSearchResultScreen(),
+        '/alternative-parts': (context) => AlternativePartsScreen(),
         '/comparison': (context) => ComparisonScreen(),
         '/compatibility': (context) => CompatibilityScreen(),
         '/inventory-optimization': (context) => InventoryOptimizationScreen(),
