@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart';
 import '../models/user_model.dart';
@@ -815,6 +816,108 @@ class ApiService {
     } catch (e) {
       final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
       ErrorHandler.logError('Failed to upload spare part image', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Upload profile picture
+  Future<String> uploadProfilePicture(String imagePath) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/upload/profile-picture');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add authentication header
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      
+      // Add image file
+      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        final imageUrl = result['url'] ?? result['image_url'] ?? result['profile_picture_url'];
+        ErrorHandler.logInfo('Profile picture uploaded successfully');
+        return imageUrl;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to upload profile picture', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Predict spare part lifecycle using AI and vision analysis
+  Future<Map<String, dynamic>> predictLifecycle({
+    required String partName,
+    required double usageHours,
+    required String location,
+    required String imagePath,
+  }) async {
+    try {
+      print('🔧 Starting lifecycle prediction API call...');
+      print('📝 Part: $partName, Hours: $usageHours, Location: $location');
+      print('📸 Image path: $imagePath');
+
+      final uri = Uri.parse('$baseUrl/api/predict-lifecycle');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+        print('🔑 Auth token added');
+      } else {
+        print('⚠️ No auth token found');
+      }
+
+      // Add form fields
+      request.fields['part_name'] = partName;
+      request.fields['usage_hours'] = usageHours.toString();
+      request.fields['location'] = location;
+      print('📋 Form fields added');
+
+      // Check if image file exists
+      final imageFile = File(imagePath);
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist: $imagePath');
+      }
+      print('📁 Image file exists, size: ${imageFile.lengthSync()} bytes');
+
+      // Add image file
+      final multipartFile = await http.MultipartFile.fromPath('image', imagePath);
+      request.files.add(multipartFile);
+      print('🖼️ Image file added to request');
+
+      // Send request
+      print('📤 Sending request to $uri...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 Response received: ${response.statusCode}');
+      print('📄 Response body length: ${response.body.length}');
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Prediction completed successfully');
+        ErrorHandler.logInfo('Lifecycle prediction completed successfully');
+        return result;
+      } else {
+        print('❌ API Error: ${response.statusCode} - ${response.body}');
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('💥 API call failed: $e');
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to predict lifecycle', e);
       throw Exception(friendlyMessage);
     }
   }

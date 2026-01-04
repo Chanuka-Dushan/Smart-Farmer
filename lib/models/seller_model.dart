@@ -81,5 +81,45 @@ class Seller {
     };
   }
 
+  Seller copyWith({
+    int? id,
+    String? businessName,
+    String? ownerFirstname,
+    String? ownerLastname,
+    String? email,
+    String? phoneNumber,
+    String? businessAddress,
+    String? businessDescription,
+    String? latitude,
+    String? longitude,
+    String? shopLocationName,
+    String? logoUrl,
+    bool? onboardingCompleted,
+    bool? isVerified,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Seller(
+      id: id ?? this.id,
+      businessName: businessName ?? this.businessName,
+      ownerFirstname: ownerFirstname ?? this.ownerFirstname,
+      ownerLastname: ownerLastname ?? this.ownerLastname,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      businessAddress: businessAddress ?? this.businessAddress,
+      businessDescription: businessDescription ?? this.businessDescription,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      shopLocationName: shopLocationName ?? this.shopLocationName,
+      logoUrl: logoUrl ?? this.logoUrl,
+      onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
+      isVerified: isVerified ?? this.isVerified,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   String get ownerFullName => '$ownerFirstname $ownerLastname';
 }

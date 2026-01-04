@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../services/l10n_extension.dart';
@@ -24,6 +25,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Seller specific
   late TextEditingController _businessNameController;
   late TextEditingController _descriptionController;
+  late TextEditingController _locationNameController;
+  
+  // Location state
+  Position? _currentPosition;
+  bool _isLoadingLocation = false;
 
   @override
   void initState() {
@@ -38,6 +44,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _addressController = TextEditingController(text: seller?.businessAddress ?? '');
       _businessNameController = TextEditingController(text: seller?.businessName ?? '');
       _descriptionController = TextEditingController(text: seller?.businessDescription ?? '');
+      _locationNameController = TextEditingController(text: seller?.shopLocationName ?? '');
+      
+      // Load current location if available
+      if (seller?.latitude != null && seller?.longitude != null) {
+        try {
+          _currentPosition = Position(
+            latitude: double.parse(seller!.latitude!),
+            longitude: double.parse(seller.longitude!),
+            timestamp: DateTime.now(),
+            accuracy: 0,
+            altitude: 0,
+            heading: 0,
+            speed: 0,
+            speedAccuracy: 0,
+            altitudeAccuracy: 0,
+            headingAccuracy: 0,
+          );
+        } catch (e) {
+          // Invalid location data
+          _currentPosition = null;
+        }
+      }
     } else {
       final user = authProvider.user;
       _firstnameController = TextEditingController(text: user?.firstname ?? '');
@@ -46,6 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _addressController = TextEditingController(text: user?.address ?? '');
       _businessNameController = TextEditingController();
       _descriptionController = TextEditingController();
+      _locationNameController = TextEditingController();
     }
   }
 
@@ -57,6 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _addressController.dispose();
     _businessNameController.dispose();
     _descriptionController.dispose();
+    _locationNameController.dispose();
     super.dispose();
   }
 
@@ -69,11 +99,131 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final success = await authProvider.uploadProfilePicture(image.path);
       
       if (!mounted) return;
-      if (!success) {
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile picture updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Force a rebuild of the widget tree
+        setState(() {});
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(authProvider.errorMessage ?? 'Upload failed')),
         );
       }
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('location_services_disabled'))),
+        );
+        setState(() {
+          _isLoadingLocation = false;
+        });
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('location_permissions_denied'))),
+          );
+          setState(() {
+            _isLoadingLocation = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('location_permissions_permanently_denied'))),
+        );
+        setState(() {
+          _isLoadingLocation = false;
+        });
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        _currentPosition = position;
+        _isLoadingLocation = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('location_updated')),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoadingLocation = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to get location: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _updateLocation() async {
+    if (_currentPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('please_get_location_first'))),
+      );
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.updateSellerLocation(
+      latitude: _currentPosition!.latitude.toString(),
+      longitude: _currentPosition!.longitude.toString(),
+      shopLocationName: _locationNameController.text.trim().isEmpty 
+          ? null 
+          : _locationNameController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('location_updated_successfully')),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? context.tr('location_update_failed')),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -302,7 +452,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               radius: 50,
                               backgroundColor: const Color(0xFF2E7D32),
                               backgroundImage: picUrl != null 
-                                ? NetworkImage(picUrl.startsWith('http') ? picUrl : '${ApiService().baseUrl}$picUrl') 
+                                ? NetworkImage(picUrl)  // Use URL directly (supports full Spaces URLs)
                                 : null,
                               child: picUrl == null 
                                 ? Text(
@@ -438,6 +588,108 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         prefixIcon: const Icon(Icons.description),
                       ),
                     ),
+                    
+                    // Location Section
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    
+                    Text(
+                      context.tr('shop_location'),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Current location display
+                    if (_currentPosition != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, color: Color(0xFF2E7D32)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    context.tr('current_location_coordinates'),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Latitude: ${_currentPosition!.latitude.toStringAsFixed(6)}'),
+                            Text('Longitude: ${_currentPosition!.longitude.toStringAsFixed(6)}'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Location name input
+                    TextFormField(
+                      controller: _locationNameController,
+                      decoration: InputDecoration(
+                        labelText: context.tr('shop_location_name'),
+                        hintText: 'e.g., Downtown Shop, Main Street Store',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.place),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Get Location Button
+                    OutlinedButton.icon(
+                      onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+                      icon: _isLoadingLocation 
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.my_location),
+                      label: Text(
+                        _currentPosition == null 
+                            ? context.tr('get_current_location')
+                            : context.tr('update_current_location'),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Save Location Button
+                    ElevatedButton.icon(
+                      onPressed: _currentPosition == null ? null : _updateLocation,
+                      icon: const Icon(Icons.save_alt),
+                      label: Text(context.tr('save_location')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    const Divider(),
                   ],
                   
                   const SizedBox(height: 24),

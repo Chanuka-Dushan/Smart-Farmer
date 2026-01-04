@@ -60,9 +60,7 @@ class _MySparePartRequestsScreenState extends State<MySparePartRequestsScreen> {
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            req['image_url'].startsWith('http') 
-                              ? req['image_url'] 
-                              : '${ApiService().baseUrl}${req['image_url']}',
+                            req['image_url'],  // Use URL directly (supports both full Spaces URLs and relative paths)
                             width: 50, height: 50, fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => const CircleAvatar(
                               backgroundColor: Colors.grey,

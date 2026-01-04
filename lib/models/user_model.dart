@@ -58,6 +58,35 @@ class User {
   }
 
   String get fullName => '$firstname $lastname';
+
+  /// Create a copy of User with updated fields
+  User copyWith({
+    int? id,
+    String? firstname,
+    String? lastname,
+    String? email,
+    String? phoneNumber,
+    String? address,
+    String? profilePictureUrl,
+    bool? isBanned,
+    bool? isDeleted,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return User(
+      id: id ?? this.id,
+      firstname: firstname ?? this.firstname,
+      lastname: lastname ?? this.lastname,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      address: address ?? this.address,
+      profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      isBanned: isBanned ?? this.isBanned,
+      isDeleted: isDeleted ?? this.isDeleted,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 class AuthResponse {

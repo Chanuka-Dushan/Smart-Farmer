@@ -94,7 +94,7 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
                         leading: CircleAvatar(
                           backgroundColor: Colors.green[100],
                           backgroundImage: seller['logo_url'] != null 
-                            ? NetworkImage('${ApiService().baseUrl}${seller['logo_url']}')
+                            ? NetworkImage(seller['logo_url'])  // Use URL directly
                             : null,
                           child: seller['logo_url'] == null ? const Icon(Icons.store) : null,
                         ),

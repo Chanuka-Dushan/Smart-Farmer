@@ -118,9 +118,7 @@ class _SellerSparePartRequestsScreenState extends State<SellerSparePartRequestsS
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                           child: Image.network(
-                            req['image_url'].startsWith('http') 
-                              ? req['image_url'] 
-                              : '${ApiService().baseUrl}${req['image_url']}',
+                            req['image_url'],  // Use URL directly (supports both full Spaces URLs and relative paths)
                             height: 200, fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Container(
                               height: 200,
