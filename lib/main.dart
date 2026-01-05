@@ -20,6 +20,7 @@ import 'screens/profile_screen.dart';
 import 'screens/spare_part_request_screen.dart';
 import 'screens/my_spare_part_requests_screen.dart';
 import 'screens/seller_spare_part_requests_screen.dart';
+import 'screens/payment_screen.dart';
 import 'services/l10n.dart';
 import 'services/theme_service.dart';
 import 'providers/auth_provider.dart';
@@ -33,6 +34,7 @@ import 'screens/inventory_details_screen.dart';
 import 'screens/high_demand_parts_screen.dart';
 import 'screens/seasonal_demand_machines_screen.dart';
 import 'screens/lifecycle_prediction_screen.dart';
+import 'screens/accepted_orders_screen.dart';
 
 
 Future<void> main() async {
@@ -119,7 +121,18 @@ class SmartSparePartApp extends StatelessWidget {
         '/find-spare-part': (context) => const SparePartRequestScreen(),
         '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
         '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
-
+        '/accepted-order': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return AcceptedOrdersScreen(requestId: args['request_id'] as int);
+        },
+        '/payment': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return PaymentScreen(
+            offerId: args['offer_id'] as int,
+            amount: args['amount'] as double,
+            totalAmount: args['total_amount'] as double,
+          );
+        },
       },
     );
   }

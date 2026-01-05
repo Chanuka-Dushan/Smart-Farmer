@@ -3,7 +3,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../models/seller_model.dart';
 import '../services/api_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -42,11 +41,37 @@ class AuthProvider with ChangeNotifier {
           _user = await _apiService.getProfile();
           _userType = 'user';
         }
+        
+        // Clear image cache for profile pictures after loading
+        // Use a small delay to ensure profile is loaded first
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _clearProfileImageCache();
+          notifyListeners(); // Notify again after cache clear
+        });
       } catch (e) {
         _isAuthenticated = false;
       }
     }
     notifyListeners();
+  }
+  
+  /// Clear image cache for profile pictures
+  void _clearProfileImageCache() {
+    try {
+      final userPicUrl = _user?.profilePictureUrl;
+      if (userPicUrl != null && userPicUrl.isNotEmpty) {
+        final imageProvider = NetworkImage(userPicUrl);
+        imageProvider.evict();
+      }
+      final sellerLogoUrl = _seller?.logoUrl;
+      if (sellerLogoUrl != null && sellerLogoUrl.isNotEmpty) {
+        final imageProvider = NetworkImage(sellerLogoUrl);
+        imageProvider.evict();
+      }
+    } catch (e) {
+      // Ignore cache clearing errors
+      print('Warning: Failed to clear image cache: $e');
+    }
   }
 
   /// Register new user
@@ -176,6 +201,39 @@ class AuthProvider with ChangeNotifier {
       
       _isAuthenticated = true;
       _isLoading = false;
+      
+      // Refresh profile to get latest data including profile picture
+      try {
+        if (_userType == 'user') {
+          _user = await _apiService.getProfile();
+          // Clear image cache after loading user profile
+          final userPicUrl = _user?.profilePictureUrl;
+          if (userPicUrl != null && userPicUrl.isNotEmpty) {
+            try {
+              final imageProvider = NetworkImage(userPicUrl);
+              imageProvider.evict();
+            } catch (e) {
+              // Ignore cache clearing errors
+            }
+          }
+        } else if (_userType == 'seller') {
+          _seller = await _apiService.getSellerProfile();
+          // Clear image cache after loading seller profile
+          final sellerLogoUrl = _seller?.logoUrl;
+          if (sellerLogoUrl != null && sellerLogoUrl.isNotEmpty) {
+            try {
+              final imageProvider = NetworkImage(sellerLogoUrl);
+              imageProvider.evict();
+            } catch (e) {
+              // Ignore cache clearing errors
+            }
+          }
+        }
+      } catch (e) {
+        // If refresh fails, continue with existing data
+        print('Warning: Failed to refresh profile after login: $e');
+      }
+      
       notifyListeners();
       return true;
     } catch (e) {
@@ -207,6 +265,15 @@ class AuthProvider with ChangeNotifier {
       _userType = 'seller';
       _isAuthenticated = true;
       _isLoading = false;
+      
+      // Refresh profile to get latest data including logo
+      try {
+        _seller = await _apiService.getSellerProfile();
+      } catch (e) {
+        // If refresh fails, continue with existing data
+        print('Warning: Failed to refresh seller profile after login: $e');
+      }
+      
       notifyListeners();
       return true;
     } catch (e) {
@@ -545,13 +612,33 @@ class AuthProvider with ChangeNotifier {
 
     try {
       // Upload image to server and get URL
-      final imageUrl = await _apiService.uploadProfilePicture(imagePath);
+      await _apiService.uploadProfilePicture(imagePath);
       
       // Refresh profile from server to get updated data
       if (_userType == 'user') {
         _user = await _apiService.getProfile();
+        // Clear cache after refresh
+        final userPicUrl = _user?.profilePictureUrl;
+        if (userPicUrl != null && userPicUrl.isNotEmpty) {
+          try {
+            final imageProvider = NetworkImage('$userPicUrl?t=${DateTime.now().millisecondsSinceEpoch}');
+            imageProvider.evict();
+          } catch (e) {
+            // Ignore cache clearing errors
+          }
+        }
       } else if (_userType == 'seller') {
         _seller = await _apiService.getSellerProfile();
+        // Clear cache after refresh
+        final sellerLogoUrl = _seller?.logoUrl;
+        if (sellerLogoUrl != null && sellerLogoUrl.isNotEmpty) {
+          try {
+            final imageProvider = NetworkImage(sellerLogoUrl);
+            imageProvider.evict();
+          } catch (e) {
+            // Ignore cache clearing errors
+          }
+        }
       }
       
       _isLoading = false;

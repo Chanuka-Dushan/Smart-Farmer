@@ -37,12 +37,118 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
 
   Future<void> _updateStatus(int offerId, String status) async {
     try {
-      await ApiService().updateOfferStatus(offerId, status);
-      _fetchOffers(); // Refresh
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Offer $status')),
-      );
+      // If accepting, show payment dialog FIRST, then accept after payment
+      if (status == 'accepted') {
+        if (!mounted) return;
+        final offer = _offers.firstWhere((o) => o['id'] == offerId);
+        final depositAmount = (offer['price'] as num) * 0.05;
+        
+        final shouldPay = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.payment, color: Color(0xFF2E7D32)),
+                SizedBox(width: 8),
+                Text('Payment Required'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'To complete your order, please pay a 5% deposit:',
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total Order: LKR ${offer['price'].toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Deposit (5%): LKR ${depositAmount.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+                child: const Text('Pay Now', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldPay != true || !mounted) {
+          // User cancelled payment
+          return;
+        }
+        
+        // Navigate to payment screen and wait for result
+        final paymentResult = await Navigator.pushNamed(
+          context,
+          '/payment',
+          arguments: {'offer_id': offerId, 'amount': depositAmount, 'total_amount': offer['price']},
+        );
+        
+        // Payment confirmation already accepts the offer in the backend
+        // Just refresh the offers list
+        if (paymentResult == true && mounted) {
+          _fetchOffers(); // Refresh to show updated status
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment completed and offer accepted!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // Payment failed or cancelled
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Payment cancelled. Offer not accepted.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      } else {
+        // For reject, just update status
+        await ApiService().updateOfferStatus(offerId, status);
+        _fetchOffers(); // Refresh
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Offer $status')),
+        );
+      }
     } catch (e) {
        if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,8 +204,15 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
                             : null,
                           child: seller['logo_url'] == null ? const Icon(Icons.store) : null,
                         ),
-                        title: Text(seller['business_name'] ?? 'Unknown store', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(seller['business_address'] ?? 'No address provided'),
+                        title: Text(
+                          seller['business_name'] ?? 'Unknown store',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          seller['business_address'] ?? 
+                          seller['shop_location_name'] ?? 
+                          'No address provided',
+                        ),
                         trailing: Text(
                           'LKR ${offer['price'].toStringAsFixed(2)}',
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_service.dart';
 import '../services/l10n_extension.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -444,7 +443,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           final String displayName = isSeller ? seller!.businessName : user!.fullName;
           final String email = isSeller ? seller!.email : user!.email;
-          final String? picUrl = isSeller ? seller!.logoUrl : user!.profilePictureUrl;
+          String? picUrl = isSeller ? seller!.logoUrl : user!.profilePictureUrl;
+          // Add cache busting for user profile pictures - always use timestamp for users
+          if (!isSeller && picUrl != null && picUrl.isNotEmpty) {
+            // Remove existing timestamp if any
+            final cleanUrl = picUrl.split('?').first;
+            picUrl = '$cleanUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+          }
           final String initials = isSeller 
             ? (seller!.businessName.isNotEmpty ? seller.businessName.substring(0, 1).toUpperCase() : "S")
             : ((user!.firstname.isNotEmpty ? user.firstname[0] : "") + (user.lastname.isNotEmpty ? user.lastname[0] : "")).toUpperCase();
@@ -467,7 +472,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               backgroundColor: const Color(0xFF2E7D32),
                               backgroundImage: picUrl != null && picUrl.isNotEmpty
                                 ? NetworkImage(
-                                    picUrl,
+                                    '$picUrl?t=${DateTime.now().millisecondsSinceEpoch}',
                                     headers: {
                                       'Cache-Control': 'no-cache',
                                     },

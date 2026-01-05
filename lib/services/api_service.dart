@@ -1020,4 +1020,92 @@ class ApiService {
       throw Exception(friendlyMessage);
     }
   }
+
+  /// Create payment intent for spare part order
+  Future<Map<String, dynamic>> createPaymentIntent(int offerId) async {
+    try {
+      final response = await _makeRequest(
+        'POST',
+        '/api/payments/create-intent',
+        body: {'offer_id': offerId},
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Payment intent created successfully');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to create payment intent', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Confirm payment
+  Future<Map<String, dynamic>> confirmPayment(String paymentIntentId) async {
+    try {
+      final response = await _makeRequest(
+        'POST',
+        '/api/payments/confirm',
+        body: {'payment_intent_id': paymentIntentId},
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Payment confirmed successfully');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to confirm payment', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get user's payments
+  Future<List<dynamic>> getMyPayments() async {
+    try {
+      final response = await _makeRequest('GET', '/api/payments/my-payments');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        ErrorHandler.logInfo('My payments loaded successfully');
+        return data;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load my payments', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get seller's approved payments
+  Future<List<dynamic>> getSellerPayments() async {
+    try {
+      final response = await _makeRequest('GET', '/api/payments/seller-payments');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        ErrorHandler.logInfo('Seller payments loaded successfully');
+        return data;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load seller payments', e);
+      throw Exception(friendlyMessage);
+    }
+  }
 }

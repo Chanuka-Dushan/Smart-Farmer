@@ -21,6 +21,8 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
+        apiVersion = "2.0"
+        languageVersion = "2.0"
     }
 
     defaultConfig {

@@ -370,23 +370,37 @@ class _SparePartScanScreenState extends State<SparePartScanScreen>
         return;
       }
 
-      final status = (prediction['status'] as String?)?.toLowerCase() ?? '';
+      final statusRaw = (prediction['status'] as String?) ?? '';
+      final status = statusRaw.toLowerCase();
       final remainingLife =
           prediction['remaining_life_hours'] as int? ??
           (prediction['remaining_life_hours'] as double?)?.toInt() ??
           0;
 
       print(
-        '🔍 Checking condition - Status: $status, Remaining Life: $remainingLife hours',
+        '🔍 Checking condition - Status: $statusRaw (lowercase: $status), Remaining Life: $remainingLife hours',
       );
 
-      // Check if critical (bad status or remaining life < 100 hours)
-      if (status == 'critical' || status == 'bad' || remainingLife < 100) {
-        print('⚠️ Critical condition detected!');
+      // Check if critical or warning - check if status contains keywords or check remaining life
+      final isWarning = status.contains('warning') || 
+                        (remainingLife >= 100 && remainingLife < 300 && !status.contains('critical'));
+      final isCritical = status.contains('critical') || 
+                         status.contains('bad') || 
+                         remainingLife < 100;
+      
+      print('🔍 Condition check - isCritical: $isCritical, isWarning: $isWarning');
+      
+      if (isCritical || isWarning) {
+        print('⚠️ ${isCritical ? "Critical" : "Warning"} condition detected! Showing dialog...');
         Future.delayed(const Duration(milliseconds: 500), () {
-          if (!mounted) return;
+          if (!mounted) {
+            print('⚠️ Widget not mounted, skipping dialog');
+            return;
+          }
           _showRecommendationDialog();
         });
+      } else {
+        print('ℹ️ Condition is normal, no dialog needed');
       }
     } catch (e) {
       print('❌ Error checking critical condition: $e');
@@ -398,22 +412,25 @@ class _SparePartScanScreenState extends State<SparePartScanScreen>
     // Get prediction details for the dialog
     final prediction =
         _predictionResult?['prediction'] as Map<String, dynamic>?;
-    final status = prediction?['status'] as String? ?? 'critical';
+    final statusRaw = prediction?['status'] as String? ?? 'critical';
+    final status = statusRaw.toLowerCase();
     final remainingLife =
         prediction?['remaining_life_hours'] as int? ??
         (prediction?['remaining_life_hours'] as double?)?.toInt() ??
         0;
+
+    print('📋 Showing recommendation dialog - Status: $statusRaw (lowercase: $status), Remaining Life: $remainingLife');
 
     // Determine urgency level
     String urgencyMessage;
     Color urgencyColor;
     IconData urgencyIcon;
 
-    if (remainingLife < 50 || status == 'critical') {
+    if (remainingLife < 50 || status.contains('critical')) {
       urgencyMessage = 'URGENT: This part needs immediate replacement!';
       urgencyColor = Colors.red;
       urgencyIcon = Icons.error_outline;
-    } else if (remainingLife < 100 || status == 'bad') {
+    } else if (remainingLife < 100 || status.contains('bad') || status.contains('warning')) {
       urgencyMessage = 'WARNING: This part needs replacement soon.';
       urgencyColor = Colors.orange;
       urgencyIcon = Icons.warning_amber_rounded;
@@ -468,7 +485,7 @@ class _SparePartScanScreenState extends State<SparePartScanScreen>
                       ),
                       const SizedBox(height: 4),
                       Text('Remaining Life: $remainingLife hours'),
-                      Text('Condition: ${status.toUpperCase()}'),
+                      Text('Condition: ${statusRaw.toUpperCase()}'),
                     ],
                   ),
                 ),

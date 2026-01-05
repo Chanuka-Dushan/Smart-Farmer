@@ -32,4 +32,13 @@ class AppConfig {
   static String get userLoginUrl => '$apiBaseUrl/api/users/login';
   static String get userProfileUrl => '$apiBaseUrl/api/users/me';
   static String get userPasswordUrl => '$apiBaseUrl/api/users/me/password';
+  
+  // Stripe Configuration
+  static String get stripePublishableKey {
+    try {
+      return dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? 'pk_test_51SLiluIumKJBzyfFy3xnrCLzNWveG05qWlF2MboAkZmwUKe4LAro8cUKuXakXd2navyoCg6bKtmVaKkA8QdguJZI00Dn9lzOt2';
+    } catch (e) {
+      return 'pk_test_51SLiluIumKJBzyfFy3xnrCLzNWveG05qWlF2MboAkZmwUKe4LAro8cUKuXakXd2navyoCg6bKtmVaKkA8QdguJZI00Dn9lzOt2';
+    }
+  }
 }

@@ -52,6 +52,10 @@ dependencies:
   flutter_facebook_auth: ^7.0.1  # For Facebook authentication
   lottie: ^3.1.0  # For animations
   url_launcher: ^6.2.5  # For making phone calls and opening URLs
+  flutter_stripe: ^11.1.0  # For Stripe payment processing
+  pdf: ^3.10.7  # For PDF generation
+  path_provider: ^2.1.1  # For file system access
+  share_plus: ^7.2.1  # For sharing PDF files
 
 dev_dependencies:
   flutter_test:
