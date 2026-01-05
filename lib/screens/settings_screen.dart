@@ -6,6 +6,7 @@ import 'dart:io';
 import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 import '../services/theme_service.dart';
+import '../providers/auth_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -36,12 +37,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadUserData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final prefs = await SharedPreferences.getInstance();
+    
     setState(() {
-      _nameController.text = prefs.getString('user_name') ?? '';
-      _emailController.text = prefs.getString('user_email') ?? '';
-      _phoneController.text = prefs.getString('user_phone') ?? '';
-      _profileImagePath = prefs.getString('profile_image_path');
+      // Load from AuthProvider if user is logged in
+      if (authProvider.isAuthenticated) {
+        if (authProvider.isSeller && authProvider.seller != null) {
+          _nameController.text = authProvider.seller!.businessName;
+          _emailController.text = authProvider.seller!.email;
+          _phoneController.text = authProvider.seller!.phoneNumber ?? '';
+          _profileImagePath = authProvider.seller!.logoUrl;
+        } else if (authProvider.user != null) {
+          _nameController.text = authProvider.user!.fullName;
+          _emailController.text = authProvider.user!.email;
+          _phoneController.text = authProvider.user!.phoneNumber ?? '';
+          _profileImagePath = authProvider.user!.profilePictureUrl;
+        }
+      } else {
+        // Fallback to SharedPreferences
+        _nameController.text = prefs.getString('user_name') ?? '';
+        _emailController.text = prefs.getString('user_email') ?? '';
+        _phoneController.text = prefs.getString('user_phone') ?? '';
+        _profileImagePath = prefs.getString('profile_image_path');
+      }
+      
       selectedLanguage = prefs.getString('selected_language') ?? 'en';
     });
   }
@@ -165,10 +185,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   CircleAvatar(
                     radius: 60,
                     backgroundColor: const Color(0xFF2E7D32).withOpacity(0.2),
-                    backgroundImage: _profileImagePath != null
-                        ? FileImage(File(_profileImagePath!))
+                    backgroundImage: _profileImagePath != null && _profileImagePath!.isNotEmpty
+                        ? (_profileImagePath!.startsWith('http')
+                            ? NetworkImage(_profileImagePath!)
+                            : FileImage(File(_profileImagePath!)))
                         : null,
-                    child: _profileImagePath == null
+                    child: _profileImagePath == null || _profileImagePath!.isEmpty
                         ? const Icon(Icons.person, size: 60, color: Color(0xFF2E7D32))
                         : null,
                   ),
