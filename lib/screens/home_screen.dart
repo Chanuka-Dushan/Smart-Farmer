@@ -19,6 +19,7 @@ import 'compatibility_screen.dart';
 import 'inventory_optimization_screen.dart';
 import 'lifecycle_prediction_screen.dart';
 import 'lifecycle_prediction_screen.dart';
+import 'upload_image_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -524,7 +525,30 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ], // Close the conditional for farmer features
 
-             // ================= YOUR SECTION =================
+             // ================= Identification Section =================
+          const SizedBox(height: 20),
+          const Text(
+            "Identification",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+
+          _buildFeatureCard(
+            context,
+            title: "Upload Spare Part Image",
+            subtitle: "Identify and analyze parts",
+            icon: Icons.upload_rounded,
+            color: Colors.blue.shade100,
+            iconColor: Colors.blue.shade700,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UploadImageScreen()),
+              );
+            },
+          ),
+
+          // ================= Smart Recommendation System =================
           const SizedBox(height: 20),
           const Text(
             "Smart Recommendation System",
