@@ -56,13 +56,16 @@ class _MySparePartRequestsScreenState extends State<MySparePartRequestsScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
-                    leading: req['image_url'] != null 
+                    leading: req['image_url'] != null && req['image_url'].toString().isNotEmpty && !req['image_url'].toString().contains('placeholder')
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            '${ApiService().baseUrl}${req['image_url']}',
+                            req['image_url'],  // Use URL directly (supports both full Spaces URLs and relative paths)
                             width: 50, height: 50, fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+                            errorBuilder: (context, error, stackTrace) => const CircleAvatar(
+                              backgroundColor: Colors.grey,
+                              child: Icon(Icons.image_not_supported, color: Colors.white),
+                            ),
                           ),
                         )
                       : const CircleAvatar(child: Icon(Icons.settings_suggest)),

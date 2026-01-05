@@ -29,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -38,18 +38,23 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      if (authProvider.isSeller && authProvider.seller != null && !authProvider.seller!.onboardingCompleted) {
+      if (authProvider.isSeller &&
+          authProvider.seller != null &&
+          !authProvider.seller!.onboardingCompleted) {
         Navigator.pushReplacementNamed(context, '/seller-onboarding');
       } else {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } else {
-      if (authProvider.errorMessage?.toLowerCase().contains('banned') ?? false) {
+      if (authProvider.errorMessage?.toLowerCase().contains('banned') ??
+          false) {
         _showBannedDialog(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? context.l10n.tr('login_failed')),
+            content: Text(
+              authProvider.errorMessage ?? context.l10n.tr('login_failed'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -60,10 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
   // Function to handle social login
   Future<void> _handleSocialLogin(String provider) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Connecting to $provider...')),
-    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Connecting to $provider...')));
 
     try {
       String? email;
@@ -76,7 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
         final GoogleSignIn googleSignIn = GoogleSignIn(
           scopes: ['email'],
           // Use the web client ID from Firebase Console for Android
-          serverClientId: '941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com',
+          serverClientId:
+              '941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com',
         );
         await googleSignIn.signOut(); // Force account selection
         final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
@@ -90,9 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         email = googleUser.email;
-        final nameParts = googleUser.displayName?.split(' ') ?? ['Social', 'User'];
+        final nameParts =
+            googleUser.displayName?.split(' ') ?? ['Social', 'User'];
         firstName = nameParts.first;
-        lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : 'Google';
+        lastName =
+            nameParts.length > 1 ? nameParts.sublist(1).join(' ') : 'Google';
         socialId = googleUser.id;
         profilePic = googleUser.photoUrl;
       } else {
@@ -110,24 +118,33 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final success = await authProvider.socialLogin(
+
         email: email ?? "user_$provider@example.com",
         firstname: firstName ?? "Social",
         lastname: lastName ?? provider.toUpperCase(),
         socialId: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+
+
         provider: provider,
-        // profilePictureUrl: profilePic, // Backend update might be needed for this field in SocialLoginRequest
+        idToken: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        email: email ?? "user_${provider}@example.com",
+        name: "${firstName ?? "Social"} ${lastName ?? provider.toUpperCase()}",
+        photoUrl: profilePic,
       );
 
       if (!mounted) return;
 
       if (success) {
-        if (authProvider.isSeller && authProvider.seller != null && !authProvider.seller!.onboardingCompleted) {
+        if (authProvider.isSeller &&
+            authProvider.seller != null &&
+            !authProvider.seller!.onboardingCompleted) {
           Navigator.pushReplacementNamed(context, '/seller-onboarding');
         } else {
           Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
       } else {
-        if (authProvider.errorMessage?.toLowerCase().contains('banned') ?? false) {
+        if (authProvider.errorMessage?.toLowerCase().contains('banned') ??
+            false) {
           _showBannedDialog(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -153,12 +170,13 @@ class _LoginScreenState extends State<LoginScreen> {
           } else if (e.toString().contains('sign_in_failed')) {
             errorMessage = 'Sign-in failed. Please try again.';
           } else {
-            errorMessage = 'Google Sign-In error. Please check your configuration.';
+            errorMessage =
+                'Google Sign-In error. Please check your configuration.';
           }
         } else {
           errorMessage = 'Login failed: ${e.toString()}';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -173,42 +191,57 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showBannedDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.report_problem, color: Colors.red, size: 30),
-            SizedBox(width: 10),
-            Text("Access Denied", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Your account has been restricted.",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            SizedBox(height: 12),
-            Text(
-              "An administrator has suspended your access for violating our terms of service or safety guidelines.",
-              style: TextStyle(color: Colors.grey),
+            title: const Row(
+              children: [
+                Icon(Icons.report_problem, color: Colors.red, size: 30),
+                SizedBox(width: 10),
+                Text(
+                  "Access Denied",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 16),
-            Text(
-              "If you believe this is a mistake, please reach out to our support team at support@smartfarmer.com",
-              style: TextStyle(fontWeight: FontWeight.w500),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Your account has been restricted.",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "An administrator has suspended your access for violating our terms of service or safety guidelines.",
+                  style: TextStyle(color: Colors.grey),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "If you believe this is a mistake, please reach out to our support team at support@smartfarmer.com",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Understand", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Understand",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -226,15 +259,31 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                Icon(Icons.agriculture, size: 80, color: Theme.of(context).primaryColor),
+                Icon(
+                  Icons.agriculture,
+                  size: 80,
+                  color: Theme.of(context).primaryColor,
+                ),
                 const SizedBox(height: 20),
                 Text(
                   context.tr('welcome_back'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 28, 
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).textTheme.headlineLarge?.color,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Login as Farmer or Seller',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -243,8 +292,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: context.tr('email'),
-                    border: const OutlineInputBorder(),
+                    hintText: 'Enter your email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     prefixIcon: const Icon(Icons.email),
+                    filled: true,
+                    fillColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.surface
+                            : Colors.grey[50],
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -262,8 +319,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: context.tr('password'),
-                    border: const OutlineInputBorder(),
+                    hintText: 'Enter your password',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     prefixIcon: const Icon(Icons.lock),
+                    filled: true,
+                    fillColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(context).colorScheme.surface
+                            : Colors.grey[50],
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -278,14 +343,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     return authProvider.isLoading
                         ? const Center(child: CircularProgressIndicator())
                         : ElevatedButton(
-                            onPressed: _login,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2E7D32),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Text(context.tr('login')),
-                          );
+                            elevation: 2,
+                          ),
+                          child: Text(
+                            context.tr('login'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
                   },
                 ),
                 const SizedBox(height: 16),
@@ -294,7 +369,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Navigate to forgot password screen
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
                     );
                   },
                   child: Text(context.tr('forgot_password')),
@@ -305,7 +382,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Expanded(child: Divider()),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(context.tr('or_continue_with'), style: TextStyle(color: Colors.grey[600])),
+                      child: Text(
+                        context.tr('or_continue_with'),
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                        ),
+                      ),
                     ),
                     const Expanded(child: Divider()),
                   ],
@@ -314,34 +398,125 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _socialButton(
-                      icon: Icons.g_mobiledata,
-                      color: Colors.red,
-                      label: 'Google',
-                      onPressed: () => _handleSocialLogin('google'),
+                    Expanded(
+                      child: _socialButton(
+                        icon: Icons.g_mobiledata,
+                        color: Colors.red,
+                        label: 'Google',
+                        onPressed: () => _handleSocialLogin('google'),
+                      ),
                     ),
-                    _socialButton(
-                      icon: Icons.facebook,
-                      color: Colors.blue[800]!,
-                      label: 'Facebook',
-                      onPressed: () => _handleSocialLogin('facebook'),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _socialButton(
+                        icon: Icons.facebook,
+                        color: Colors.blue[800]!,
+                        label: 'Facebook',
+                        onPressed: () => _handleSocialLogin('facebook'),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/register');
-                  },
-                  child: Text(context.tr('dont_have_account')),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/seller-register');
-                  },
-                  child: const Text(
-                    "Register as a Seller",
-                    style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Theme.of(
+                              context,
+                            ).colorScheme.surface.withOpacity(0.5)
+                            : Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? Theme.of(
+                                context,
+                              ).colorScheme.outline.withOpacity(0.5)
+                              : Colors.blue[200]!,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.blue[700],
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Don't have an account?",
+                            style: TextStyle(
+                              color:
+                                  Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color
+                                      : Colors.blue[900],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  () =>
+                                      Navigator.pushNamed(context, '/register'),
+                              icon: const Icon(Icons.person_add, size: 18),
+                              label: const Text('Register as Farmer'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF2E7D32),
+                                side: const BorderSide(
+                                  color: Color(0xFF2E7D32),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  () => Navigator.pushNamed(
+                                    context,
+                                    '/seller-register',
+                                  ),
+                              icon: const Icon(Icons.store, size: 18),
+                              label: const Text('Register as Seller'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF2E7D32),
+                                side: const BorderSide(
+                                  color: Color(0xFF2E7D32),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -362,16 +537,44 @@ class _LoginScreenState extends State<LoginScreen> {
       onTap: onPressed,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
+          color:
+              Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.white,
+          border: Border.all(
+            color:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                    : Colors.grey[300]!,
+          ),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Colors.black.withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 30),
+            Icon(icon, color: color, size: 28),
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
           ],
         ),
       ),
@@ -394,7 +597,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('forgot_password'))),
+      appBar: AppBar(
+        title: Text(context.tr('forgot_password')),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: _isSent ? _buildSuccess() : _buildForm(),
@@ -422,7 +629,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               prefixIcon: const Icon(Icons.email),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return context.tr('please_enter_email');
+              if (value == null || value.isEmpty)
+                return context.tr('please_enter_email');
               return null;
             },
           ),
@@ -430,13 +638,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ElevatedButton(
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
-                final success = await Provider.of<AuthProvider>(context, listen: false)
-                    .forgotPassword(_emailController.text.trim());
+                final success = await Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                ).forgotPassword(_emailController.text.trim());
                 if (success) {
                   setState(() => _isSent = true);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.tr('failed_to_send_reset'))),
+                    SnackBar(
+                      content: Text(context.l10n.tr('failed_to_send_reset')),
+                    ),
                   );
                 }
               }
@@ -487,17 +699,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               labelText: context.tr('new_password'),
               border: const OutlineInputBorder(),
             ),
-            validator: (value) => value!.length < 6 ? 'Password too short' : null,
+            validator:
+                (value) => value!.length < 6 ? 'Password too short' : null,
           ),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () async {
               if (resetFormKey.currentState!.validate()) {
-                final success = await Provider.of<AuthProvider>(context, listen: false)
-                    .resetPassword(tokenController.text, passwordController.text);
+                final success = await Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                ).resetPassword(tokenController.text, passwordController.text);
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.tr('password_reset_success'))),
+                    SnackBar(
+                      content: Text(context.l10n.tr('password_reset_success')),
+                    ),
                   );
                   Navigator.pop(context);
                 } else {

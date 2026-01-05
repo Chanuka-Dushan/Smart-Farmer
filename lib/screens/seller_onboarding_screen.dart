@@ -68,12 +68,25 @@ class _SellerOnboardingScreenState extends State<SellerOnboardingScreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Upload logo first if selected
+    if (_logoFile != null) {
+      final logoSuccess = await authProvider.uploadProfilePicture(_logoFile!.path);
+      if (!logoSuccess && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? "Failed to upload logo")),
+        );
+        return;
+      }
+    }
+    
+    // Complete onboarding with correct field mapping
     final success = await authProvider.completeSellerOnboarding(
-      businessName: _businessNameController.text.trim(),
-      businessAddress: _businessAddressController.text.trim(),
+      businessName: _businessNameController.text.trim(),  // Store Name -> businessName
+      businessAddress: _businessAddressController.text.trim(),  // Physical Address -> businessAddress
       latitude: _selectedLocation!.latitude.toString(),
       longitude: _selectedLocation!.longitude.toString(),
-      logoPath: _logoFile?.path,
+      shopLocationName: _businessAddressController.text.trim(),  // Use same for location name
     );
 
     if (success && mounted) {

@@ -3,8 +3,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
-import '../utils/firebase_helper.dart';
+import 'services/notification_service.dart';
+import 'utils/error_handler.dart';
 import 'screens/splash_screen.dart';
 import 'screens/language_selection_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -23,24 +25,47 @@ import 'services/l10n.dart';
 import 'services/theme_service.dart';
 import 'providers/auth_provider.dart';
 
+import 'screens/nlp_search_screen.dart';
+import 'screens/compatibility_screen.dart';
+import 'screens/inventory_optimization_screen.dart';
+import 'screens/part_detail_screen.dart';
+import 'screens/comparison_screen.dart';
+import 'screens/inventory_details_screen.dart';
+import 'screens/high_demand_parts_screen.dart';
+import 'screens/seasonal_demand_machines_screen.dart';
+import 'screens/lifecycle_prediction_screen.dart';
+
+
 Future<void> main() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
-  
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  // Initialize FCM
-  await FirebaseHelper.initialize();
-  
   // Initialize L10n singleton and load language preference
   final l10n = L10n();
-  await l10n.loadLanguage();
+  
+  try {
+    // Load environment variables
+    await dotenv.load(fileName: ".env");
+    
+    // Initialize Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    // Set up background message handler
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    
+    // Initialize notification service
+    await NotificationService.instance.initialize();
+    
+    // Load language preference
+    await l10n.loadLanguage();
+    
+    ErrorHandler.logInfo('App initialization completed successfully');
+  } catch (e) {
+    ErrorHandler.logError('Failed to initialize app', e);
+    // Continue with app startup even if some services fail
+  }
   
   runApp(
     MultiProvider(
@@ -73,17 +98,29 @@ class SmartSparePartApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/language': (context) => const LanguageSelectionScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => HomeScreen(),
         '/login': (context) => const LoginScreen(),   
         '/register': (context) => const RegisterScreen(),
         '/seller-register': (context) => const SellerRegisterScreen(),
         '/camera': (context) => const CameraScanScreen(),
         '/settings': (context) => const SettingsScreen(),
+
+        '/nlp-search': (context) => NlpSearchScreen(),
+        '/part-detail': (context) => PartDetailScreen(),
+        '/comparison': (context) => ComparisonScreen(),
+        '/compatibility': (context) => CompatibilityScreen(),
+        '/inventory-optimization': (context) => InventoryOptimizationScreen(),
+        '/inventory-details': (context) => InventoryDetailsScreen(),
+        '/high-demand-results': (context) => const HighDemandResultScreen(),
+        '/seasonal-machines': (context) => const SeasonalMachineScreen(),
+        '/lifecycle-prediction': (context) => const LifecyclePredictionScreen(),
+
         '/seller-onboarding': (context) => const SellerOnboardingScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/find-spare-part': (context) => const SparePartRequestScreen(),
         '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
         '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
+
       },
     );
   }

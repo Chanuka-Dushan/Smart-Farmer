@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlong;
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../providers/auth_provider.dart';
 
 class SellerLocationScreen extends StatefulWidget {
   const SellerLocationScreen({super.key});
@@ -54,7 +56,10 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
       );
 
       setState(() {
-        _selectedLocation = latlong.LatLng(position.latitude, position.longitude);
+        _selectedLocation = latlong.LatLng(
+          position.latitude,
+          position.longitude,
+        );
         _isLocationLoading = false;
       });
 
@@ -62,9 +67,9 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
       _mapController.move(_selectedLocation!, 15.0);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error getting location: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
       }
       setState(() => _isLocationLoading = false);
     }
@@ -78,30 +83,28 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
     try {
       // Example coordinates for Colombo, Sri Lanka
       final searchResults = [
-        {
-          'name': 'Colombo City Center',
-          'lat': 6.9271,
-          'lng': 79.8612,
-        },
-        {
-          'name': 'Pettah Market',
-          'lat': 6.9320,
-          'lng': 79.8547,
-        },
-        {
-          'name': 'Fort Railway Station',
-          'lat': 6.9328,
-          'lng': 79.8431,
-        },
+        {'name': 'Colombo City Center', 'lat': 6.9271, 'lng': 79.8612},
+        {'name': 'Pettah Market', 'lat': 6.9320, 'lng': 79.8547},
+        {'name': 'Fort Railway Station', 'lat': 6.9328, 'lng': 79.8431},
       ];
 
       // Find matching result (simple string matching)
       final result = searchResults.firstWhere(
-        (location) => (location['name'] as String).toLowerCase().contains(query.toLowerCase()),
-        orElse: () => {'name': query, 'lat': 6.9271, 'lng': 79.8612}, // Default to Colombo
+        (location) => (location['name'] as String).toLowerCase().contains(
+          query.toLowerCase(),
+        ),
+        orElse:
+            () => {
+              'name': query,
+              'lat': 6.9271,
+              'lng': 79.8612,
+            }, // Default to Colombo
       );
 
-      final newLocation = latlong.LatLng(result['lat'] as double, result['lng'] as double);
+      final newLocation = latlong.LatLng(
+        result['lat'] as double,
+        result['lng'] as double,
+      );
 
       setState(() {
         _selectedLocation = newLocation;
@@ -109,12 +112,11 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
       });
 
       _mapController.move(newLocation, 16.0);
-
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error searching location: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error searching location: $e')));
       }
     } finally {
       setState(() => _isLoading = false);
@@ -139,24 +141,35 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final apiService = ApiService();
-      await apiService.updateSellerLocation(
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.completeSellerOnboarding(
         latitude: _selectedLocation!.latitude.toString(),
         longitude: _selectedLocation!.longitude.toString(),
         shopLocationName: _shopLocationName,
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location saved successfully!')),
-        );
-        Navigator.of(context).pop();
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location saved successfully!')),
+          );
+          // Navigate to home and remove all previous routes
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Error saving location: ${authProvider.errorMessage ?? 'Unknown error'}',
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving location: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving location: $e')));
       }
     } finally {
       if (mounted) {
@@ -183,10 +196,7 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
           else
             TextButton(
               onPressed: _saveLocation,
-              child: const Text(
-                'Save',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
             ),
         ],
       ),
@@ -200,15 +210,16 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
               decoration: InputDecoration(
                 hintText: 'Search for a location...',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
+                suffixIcon:
+                    _searchController.text.isNotEmpty
+                        ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                        : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -244,7 +255,12 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
                 FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter: _selectedLocation ?? const latlong.LatLng(6.9271, 79.8612), // Default to Colombo
+                    initialCenter:
+                        _selectedLocation ??
+                        const latlong.LatLng(
+                          6.9271,
+                          79.8612,
+                        ), // Default to Colombo
                     initialZoom: 13.0,
                     onTap: (tapPosition, point) {
                       setState(() {
@@ -254,7 +270,8 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.smart_farmer',
                     ),
                     if (_selectedLocation != null)
@@ -268,7 +285,10 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.red.withOpacity(0.8),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                               child: const Icon(
                                 Icons.location_on,
@@ -286,9 +306,7 @@ class _SellerLocationScreenState extends State<SellerLocationScreen> {
                 if (_isLocationLoading)
                   Container(
                     color: Colors.black.withOpacity(0.3),
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
 
                 // Current location button

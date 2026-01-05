@@ -6,7 +6,6 @@ class User {
   final String? phoneNumber;
   final String? address;
   final String? profilePictureUrl;
-  final bool isSocialLogin;
   final bool isBanned;
   final bool isDeleted;
   final DateTime createdAt;
@@ -20,7 +19,6 @@ class User {
     this.phoneNumber,
     this.address,
     this.profilePictureUrl,
-    required this.isSocialLogin,
     required this.isBanned,
     required this.isDeleted,
     required this.createdAt,
@@ -33,10 +31,9 @@ class User {
       firstname: json['firstname'] ?? '',
       lastname: json['lastname'] ?? '',
       email: json['email'] ?? '',
-      phoneNumber: json['phone_number'],
-      address: json['address'],
-      profilePictureUrl: json['profile_picture_url'],
-      isSocialLogin: json['is_social_login'] ?? false,
+      phoneNumber: json['phone_number'] is String ? json['phone_number'] : null,
+      address: json['address'] is String ? json['address'] : null,
+      profilePictureUrl: json['profile_picture_url'] is String ? json['profile_picture_url'] : null,
       isBanned: json['is_banned'] ?? false,
       isDeleted: json['is_deleted'] ?? false,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
@@ -53,7 +50,6 @@ class User {
       'phone_number': phoneNumber,
       'address': address,
       'profile_picture_url': profilePictureUrl,
-      'is_social_login': isSocialLogin,
       'is_banned': isBanned,
       'is_deleted': isDeleted,
       'created_at': createdAt.toIso8601String(),
@@ -62,6 +58,35 @@ class User {
   }
 
   String get fullName => '$firstname $lastname';
+
+  /// Create a copy of User with updated fields
+  User copyWith({
+    int? id,
+    String? firstname,
+    String? lastname,
+    String? email,
+    String? phoneNumber,
+    String? address,
+    String? profilePictureUrl,
+    bool? isBanned,
+    bool? isDeleted,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return User(
+      id: id ?? this.id,
+      firstname: firstname ?? this.firstname,
+      lastname: lastname ?? this.lastname,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      address: address ?? this.address,
+      profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      isBanned: isBanned ?? this.isBanned,
+      isDeleted: isDeleted ?? this.isDeleted,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 class AuthResponse {
@@ -76,10 +101,23 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    // Parse user data - check if it's a seller or regular user
+    final userData = json['user'] ?? {};
+    dynamic parsedUser;
+    
+    // Check if it has seller-specific fields
+    if (userData['business_name'] != null) {
+      // It's a seller
+      parsedUser = userData; // Keep as map for now, will be parsed in AuthProvider
+    } else {
+      // It's a regular user
+      parsedUser = User.fromJson(userData);
+    }
+    
     return AuthResponse(
       accessToken: json['access_token'] ?? '',
       tokenType: json['token_type'] ?? 'Bearer',
-      user: json['user'] ?? {},
+      user: parsedUser,
     );
   }
 }

@@ -66,7 +66,7 @@ class _SellerSparePartRequestsScreenState extends State<SellerSparePartRequestsS
                 try {
                   await ApiService().submitSparePartOffer(
                     requestId: requestId,
-                    price: priceController.text,
+                    price: double.tryParse(priceController.text) ?? 0.0,
                     description: descController.text,
                   );
                   if (!mounted) return;
@@ -113,13 +113,17 @@ class _SellerSparePartRequestsScreenState extends State<SellerSparePartRequestsS
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (req['image_url'] != null)
+                      if (req['image_url'] != null && req['image_url'].toString().isNotEmpty && !req['image_url'].toString().contains('placeholder'))
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                           child: Image.network(
-                            '${ApiService().baseUrl}${req['image_url']}',
+                            req['image_url'],  // Use URL directly (supports both full Spaces URLs and relative paths)
                             height: 200, fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 100),
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 200,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                            ),
                           ),
                         ),
                       Padding(

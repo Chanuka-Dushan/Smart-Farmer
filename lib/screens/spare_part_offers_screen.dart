@@ -94,14 +94,14 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
                         leading: CircleAvatar(
                           backgroundColor: Colors.green[100],
                           backgroundImage: seller['logo_url'] != null 
-                            ? NetworkImage('${ApiService().baseUrl}${seller['logo_url']}')
+                            ? NetworkImage(seller['logo_url'])  // Use URL directly
                             : null,
                           child: seller['logo_url'] == null ? const Icon(Icons.store) : null,
                         ),
                         title: Text(seller['business_name'] ?? 'Unknown store', style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(seller['business_address'] ?? 'No address provided'),
                         trailing: Text(
-                          offer['price'],
+                          'LKR ${offer['price'].toStringAsFixed(2)}',
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
                         ),
                       ),
@@ -124,9 +124,9 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () => _updateStatus(offer['id'], 'approved'),
+                                  onPressed: () => _updateStatus(offer['id'], 'accepted'),
                                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
-                                  child: const Text('Approve', style: TextStyle(color: Colors.white)),
+                                  child: const Text('Accept', style: TextStyle(color: Colors.white)),
                                 ),
                               ),
                             ],

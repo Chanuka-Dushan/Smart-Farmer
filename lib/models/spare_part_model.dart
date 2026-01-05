@@ -34,7 +34,7 @@ class SparePartOffer {
   final int id;
   final int requestId;
   final int sellerId;
-  final String price;
+  final double price;
   final String description;
   final String status;
   final DateTime createdAt;
@@ -56,7 +56,7 @@ class SparePartOffer {
       id: json['id'],
       requestId: json['request_id'],
       sellerId: json['seller_id'],
-      price: json['price'],
+      price: (json['price'] as num).toDouble(),
       description: json['description'],
       status: json['status'],
       createdAt: DateTime.parse(json['created_at']),
