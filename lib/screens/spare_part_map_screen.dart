@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-
-
 import '../services/api_service.dart';
 import '../models/shop_location_model.dart';
-
 
 class SparePartMapScreen extends StatefulWidget {
   final List<dynamic> offers;
@@ -180,27 +177,6 @@ class _SparePartMapScreenState extends State<SparePartMapScreen> {
 
     showModalBottomSheet(
       context: context,
-
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(seller['business_name'] ?? 'Store', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text('$distanceKm km away', style: const TextStyle(color: Color(0xFF2E7D32))),
-            const SizedBox(height: 12),
-            Text('Price: ${offer['price']}', style: const TextStyle(fontSize: 18, color: Colors.orange)),
-            Text(offer['description'] ?? ''),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
-                child: const Text('Close', style: TextStyle(color: Colors.white)),
-              ),
-
       builder:
           (context) => Container(
             padding: const EdgeInsets.all(24),
@@ -309,7 +285,6 @@ class _SparePartMapScreenState extends State<SparePartMapScreen> {
                   ),
                 ),
               ],
-
             ),
           ),
     );

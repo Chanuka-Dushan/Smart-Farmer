@@ -47,9 +47,7 @@ class ThemeService extends ChangeNotifier {
         elevation: 2,
       ),
 
-
       // ✅ FIXED HERE
-
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 2,
@@ -78,14 +76,9 @@ class ThemeService extends ChangeNotifier {
         elevation: 2,
       ),
 
-      cardTheme: CardThemeData(
-        color: const Color(0xFF1E1E1E),
-
-
       // ✅ FIXED HERE
       cardTheme: CardThemeData(
         color: Color(0xFF1E1E1E),
-
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),

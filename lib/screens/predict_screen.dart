@@ -111,7 +111,7 @@ class _PredictScreenState extends State<PredictScreen> {
 
               // Soil Type Dropdown
               DropdownButtonFormField<String>(
-                initialValue: _selectedSoil,
+                value: _selectedSoil,
                 decoration: const InputDecoration(
                   labelText: "Soil Condition",
                   border: OutlineInputBorder(),
