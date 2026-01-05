@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 import '../services/theme_service.dart';
 import '../providers/auth_provider.dart';
@@ -308,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           trailing: Switch(
                             value: true,
                             onChanged: (value) {},
-                            activeColor: const Color(0xFF2E7D32),
+                            activeThumbColor: const Color(0xFF2E7D32),
                           ),
                         ),
                         const Divider(height: 1),
@@ -320,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onChanged: (value) {
                               Provider.of<ThemeService>(context, listen: false).toggleTheme();
                             },
-                            activeColor: const Color(0xFF2E7D32),
+                            activeThumbColor: const Color(0xFF2E7D32),
                           ),
                         ),
                       ],

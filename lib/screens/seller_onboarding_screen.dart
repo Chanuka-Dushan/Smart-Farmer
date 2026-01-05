@@ -6,7 +6,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../providers/auth_provider.dart';
-import '../services/l10n_extension.dart';
 
 class SellerOnboardingScreen extends StatefulWidget {
   const SellerOnboardingScreen({super.key});

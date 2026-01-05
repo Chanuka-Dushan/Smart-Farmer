@@ -145,10 +145,30 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+
+      final authResponse = await _apiService.login(email: email, password: password);
+      
+      // Handle dynamic user data
+      dynamic userData = authResponse.user;
+      Map<String, dynamic> userMap;
+      
+      if (userData is Map<String, dynamic>) {
+        userMap = userData;
+      } else if (userData is User) {
+        userMap = (userData).toJson();
+      } else if (userData is Seller) {
+        userMap = (userData).toJson();
+      } else {
+        throw Exception('Invalid user data format');
+      }
+      
+      final userType = userMap['user_type'] ?? 'buyer';
+
       final authResponse = await _apiService.login(
         email: email,
         password: password,
       );
+
 
       // Check if the response contains seller data or user data
       if (authResponse.user is Map<String, dynamic>) {

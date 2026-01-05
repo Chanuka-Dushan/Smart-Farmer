@@ -4,7 +4,17 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
+
+
+// TODO: For production deployment, consider implementing:
+// 1. Proper geocoding service (Google Maps Platform, Mapbox, or OpenStreetMap Nominatim)
+// 2. Location validation and reverse geocoding
+// 3. Offline map tiles for areas with poor connectivity
+// 4. Location accuracy improvements
+// 5. Privacy policy compliance for location data
+
 import '../utils/error_handler.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,6 +31,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+
+  final bool _isLocationLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+
 
   @override
   void dispose() {
@@ -374,4 +393,105 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
+
+  Widget _socialButton({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSocialLogin(String provider) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Connecting to $provider...')),
+    );
+
+    try {
+      String? email;
+      String? firstName;
+      String? lastName;
+      String? socialId;
+
+      if (provider == 'google') {
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          scopes: ['email'],
+          serverClientId: '941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com',
+        );
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) return; // User cancelled
+
+        email = googleUser.email;
+        final nameParts = googleUser.displayName?.split(' ') ?? ['Social', 'User'];
+        firstName = nameParts.first;
+        lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : 'Google';
+        socialId = googleUser.id;
+      } else {
+        final LoginResult result = await FacebookAuth.instance.login();
+        if (result.status != LoginStatus.success) {
+          throw Exception('Facebook login failed: ${result.message}');
+        }
+
+        final userData = await FacebookAuth.instance.getUserData();
+        email = userData['email'];
+        firstName = userData['name']?.split(' ').first ?? 'Social';
+        lastName = userData['name']?.split(' ').last ?? 'Facebook';
+        socialId = userData['id'];
+      }
+
+      final success = await authProvider.socialLogin(
+        email: email ?? "user_$provider@example.com",
+        firstname: firstName ?? "Social",
+        lastname: lastName ?? provider.toUpperCase(),
+        socialId: socialId ?? "mock_id_${DateTime.now().millisecondsSinceEpoch}",
+        provider: provider,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Social login failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Social login registration error: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
 }
+
+
+

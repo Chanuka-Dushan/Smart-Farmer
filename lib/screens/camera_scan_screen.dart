@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
-import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 
 class CameraScanScreen extends StatefulWidget {
