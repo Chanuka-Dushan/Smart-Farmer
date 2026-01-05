@@ -866,13 +866,13 @@ class ApiService {
   /// Predict spare part lifecycle using AI and vision analysis
   Future<Map<String, dynamic>> predictLifecycle({
     required String partName,
-    required double usageHours,
+    double? usageHours,
     required String location,
     required String imagePath,
   }) async {
     try {
       print('🔧 Starting lifecycle prediction API call...');
-      print('📝 Part: $partName, Hours: $usageHours, Location: $location');
+      print('📝 Part: $partName, Hours: ${usageHours ?? 'N/A'}, Location: $location');
       print('📸 Image path: $imagePath');
 
       final uri = Uri.parse('$baseUrl/api/predict-lifecycle');
@@ -889,7 +889,9 @@ class ApiService {
 
       // Add form fields
       request.fields['part_name'] = partName;
-      request.fields['usage_hours'] = usageHours.toString();
+      if (usageHours != null) {
+        request.fields['usage_hours'] = usageHours.toString();
+      }
       request.fields['location'] = location;
       print('📋 Form fields added');
 

@@ -17,19 +17,18 @@ class LifecyclePredictionScreen extends StatefulWidget {
 class _LifecyclePredictionScreenState extends State<LifecyclePredictionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _partNameController = TextEditingController();
-  final _usageHoursController = TextEditingController();
 
   File? _selectedImage;
   Map<String, dynamic>? _predictionResult;
   bool _isLoading = false;
   Position? _currentPosition;
+
   bool _isLoadingLocation = false;
   String? _currentLocationName;
 
   @override
   void dispose() {
     _partNameController.dispose();
-    _usageHoursController.dispose();
     super.dispose();
   }
 
@@ -217,7 +216,6 @@ class _LifecyclePredictionScreenState extends State<LifecyclePredictionScreen> {
       final apiService = ApiService();
       final result = await apiService.predictLifecycle(
         partName: _partNameController.text.trim(),
-        usageHours: double.parse(_usageHoursController.text.trim()),
         location: _currentLocationName ?? 'Colombo',
         imagePath: _selectedImage!.path,
       );
@@ -468,26 +466,6 @@ class _LifecyclePredictionScreenState extends State<LifecyclePredictionScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Usage Hours Input
-              TextFormField(
-                controller: _usageHoursController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: context.tr('usage_hours'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.access_time),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_usage_hours');
-                  }
-                  final hours = double.tryParse(value);
-                  if (hours == null || hours < 0) {
-                    return context.tr('please_enter_valid_hours');
-                  }
-                  return null;
-                },
-              ),
               const SizedBox(height: 16),
 
               // Image Selector
