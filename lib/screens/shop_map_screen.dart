@@ -15,7 +15,9 @@ class ShopMapScreen extends StatefulWidget {
 class _ShopMapScreenState extends State<ShopMapScreen> {
   final MapController _mapController = MapController();
   List<Marker> _markers = [];
+  List<ShopLocation> _shops = [];
   bool _isLoading = true;
+  bool _showListView = false;
   latlong.LatLng? _currentLocation;
   ShopLocation? _selectedShop;
 
@@ -59,7 +61,13 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
       final apiService = ApiService();
       final locations = await apiService.getShopLocations();
 
+      print('📍 Loaded ${locations.length} shop locations');
+      for (var shop in locations) {
+        print('   - ${shop.businessName} at (${shop.lat}, ${shop.lng})');
+      }
+
       setState(() {
+        _shops = locations;
         _markers = locations.map((shop) {
           return Marker(
             point: latlong.LatLng(shop.lat, shop.lng),
@@ -76,10 +84,21 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
           );
         }).toList();
       });
+
+      // Move map to show all markers if available
+      if (locations.isNotEmpty && mounted) {
+        final firstShop = locations.first;
+        _mapController.move(latlong.LatLng(firstShop.lat, firstShop.lng), 10.0);
+      }
     } catch (e) {
+      print('❌ Error loading shop locations: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading shop locations: $e')),
+          SnackBar(
+            content: Text('Error loading shop locations: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     } finally {
@@ -100,51 +119,130 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              shop.businessName,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (shop.shopLocationName != null) ...[
-              Text(
-                shop.shopLocationName!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
+            Row(
+              children: [
+                const Icon(Icons.store, color: Colors.green, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    shop.businessName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
+              ],
+            ),
+            const Divider(height: 24),
+            if (shop.shopLocationName != null && shop.shopLocationName!.isNotEmpty) ...[
+              Row(
+                children: [
+                  const Icon(Icons.location_city, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      shop.shopLocationName!,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
             ],
-            if (shop.businessAddress != null) ...[
-              Text(
-                shop.businessAddress!,
-                style: const TextStyle(fontSize: 14),
+            if (shop.businessAddress != null && shop.businessAddress!.isNotEmpty) ...[
+              Row(
+                children: [
+                  const Icon(Icons.home, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      shop.businessAddress!,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (shop.phoneNumber != null && shop.phoneNumber!.isNotEmpty) ...[
+              Row(
+                children: [
+                  const Icon(Icons.phone, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      shop.phoneNumber!,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (shop.businessDescription != null && shop.businessDescription!.isNotEmpty) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      shop.businessDescription!,
+                      style: const TextStyle(fontSize: 14),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
             ],
             Row(
               children: [
                 const Icon(Icons.location_on, size: 16, color: Colors.red),
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
                 Text(
-                  '${shop.lat.toStringAsFixed(4)}, ${shop.lng.toStringAsFixed(4)}',
+                  '${shop.lat.toStringAsFixed(6)}, ${shop.lng.toStringAsFixed(6)}',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _mapController.move(latlong.LatLng(shop.lat, shop.lng), 16.0);
-                },
-                child: const Text('View on Map'),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _mapController.move(latlong.LatLng(shop.lat, shop.lng), 16.0);
+                    },
+                    icon: const Icon(Icons.map),
+                    label: const Text('View on Map'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                    ),
+                  ),
+                ),
+                if (shop.phoneNumber != null && shop.phoneNumber!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Implement call functionality
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Call ${shop.phoneNumber}')),
+                        );
+                      },
+                      icon: const Icon(Icons.call),
+                      label: const Text('Call'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -159,13 +257,25 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
         title: const Text('Shop Locations'),
         actions: [
           IconButton(
+            icon: Icon(_showListView ? Icons.map : Icons.list),
+            onPressed: () {
+              setState(() => _showListView = !_showListView);
+            },
+            tooltip: _showListView ? 'Show map' : 'Show list',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadShopLocations,
             tooltip: 'Refresh locations',
           ),
         ],
       ),
-      body: Stack(
+      body: _showListView ? _buildListView() : _buildMapView(),
+    );
+  }
+
+  Widget _buildMapView() {
+    return Stack(
         children: [
           FlutterMap(
             mapController: _mapController,
@@ -259,7 +369,12 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
             ),
           ),
         ],
-      ),
     );
+  }
+
+  Widget _buildListView() {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_shops.isEmpty) return const Center(child: Text('No shops found'));
+    return ListView.builder(itemCount: _shops.length, itemBuilder: (ctx, i) => ListTile(title: Text(_shops[i].businessName), onTap: () => _showShopDetails(_shops[i])));
   }
 }

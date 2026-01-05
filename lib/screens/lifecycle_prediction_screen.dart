@@ -322,17 +322,22 @@ class _LifecyclePredictionScreenState extends State<LifecyclePredictionScreen> {
             ),
             const SizedBox(height: 16),
 
-            // AI Knowledge
+            // AI Knowledge - Now shows Grok API source!
             _buildResultSection(
               context.tr('ai_knowledge'),
-              [aiKnowledge['fresh_lifespan']],
+              [
+                '${context.tr('fresh_lifespan')}: ${aiKnowledge['fresh_lifespan']}',
+                '🤖 Source: ${aiKnowledge['source'] ?? 'AI'}',
+              ],
             ),
 
-            // Visual Scan
+            // Visual Scan - Now shows confidence!
             _buildResultSection(
               context.tr('visual_scan'),
               [
                 '${context.tr('wear_detected')}: ${visualScan['wear_detected']}',
+                if (visualScan['confidence'] != null)
+                  '✓ Confidence: ${visualScan['confidence']}',
                 '${context.tr('analysis_model')}: ${visualScan['analysis_model']}',
               ],
             ),
@@ -417,6 +422,35 @@ class _LifecyclePredictionScreenState extends State<LifecyclePredictionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: 16),
+
+              // Info Card - Grok AI Integration
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.green.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '🤖 Grok AI automatically fetches standard lifespan for new parts!',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green.shade900,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Part Name Input
               TextFormField(
                 controller: _partNameController,

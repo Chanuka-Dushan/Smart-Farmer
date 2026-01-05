@@ -50,6 +50,8 @@ dependencies:
   geolocator: ^11.0.0
   google_sign_in: ^6.2.1  # For Google authentication
   flutter_facebook_auth: ^7.0.1  # For Facebook authentication
+  lottie: ^3.1.0  # For animations
+  url_launcher: ^6.2.5  # For making phone calls and opening URLs
 
 dev_dependencies:
   flutter_test:
