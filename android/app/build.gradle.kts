@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.example.smart_farmer"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "29.0.13113456"
 
     compileOptions {
