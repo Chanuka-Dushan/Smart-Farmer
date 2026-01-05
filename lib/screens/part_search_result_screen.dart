@@ -6,7 +6,9 @@ class PartSearchResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final partName =
-        ModalRoute.of(context)!.settings.arguments as String;
+    ModalRoute.of(context)?.settings.arguments as String? ??
+    "Demo Plough Blade";
+
 
     return Scaffold(
       appBar: AppBar(
