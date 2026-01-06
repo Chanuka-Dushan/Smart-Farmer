@@ -22,6 +22,7 @@ import 'screens/profile_screen.dart';
 import 'screens/spare_part_request_screen.dart';
 import 'screens/my_spare_part_requests_screen.dart';
 import 'screens/seller_spare_part_requests_screen.dart';
+import 'screens/my_offerings_screen.dart';
 import 'screens/payment_screen.dart';
 import 'services/l10n.dart';
 import 'services/theme_service.dart';
@@ -205,6 +206,7 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
         '/find-spare-part': (context) => const SparePartRequestScreen(),
         '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
         '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
+        '/my-offerings': (context) => const MyOfferingsScreen(),
         '/accepted-order': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
           return AcceptedOrdersScreen(requestId: args['request_id'] as int);

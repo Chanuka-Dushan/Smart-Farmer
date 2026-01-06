@@ -252,6 +252,14 @@ class _HomeScreenState extends State<HomeScreen> {
                    Navigator.pushNamed(context, '/seller-spare-part-requests');
                  },
                ),
+               ListTile(
+                 leading: const Icon(Icons.business_center),
+                 title: const Text("My Offerings"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/my-offerings');
+                 },
+               ),
             ] else ...[
                ListTile(
                  leading: const Icon(Icons.search_rounded),
