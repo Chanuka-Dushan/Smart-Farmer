@@ -96,6 +96,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (image != null) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Clear image cache for the current profile picture
+      final currentPicUrl = authProvider.isSeller 
+        ? authProvider.seller?.logoUrl 
+        : authProvider.user?.profilePictureUrl;
+      if (currentPicUrl != null && currentPicUrl.isNotEmpty) {
+        try {
+          final imageProvider = NetworkImage(currentPicUrl);
+          imageProvider.evict();
+        } catch (e) {
+          // Ignore eviction errors
+        }
+      }
+      
       final success = await authProvider.uploadProfilePicture(image.path);
       
       if (!mounted) return;
@@ -451,10 +465,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             CircleAvatar(
                               radius: 50,
                               backgroundColor: const Color(0xFF2E7D32),
-                              backgroundImage: picUrl != null 
-                                ? NetworkImage(picUrl)  // Use URL directly (supports full Spaces URLs)
+                              backgroundImage: picUrl != null && picUrl.isNotEmpty
+                                ? NetworkImage(
+                                    picUrl,
+                                    headers: {
+                                      'Cache-Control': 'no-cache',
+                                    },
+                                  )
                                 : null,
-                              child: picUrl == null 
+                              child: picUrl == null || picUrl.isEmpty
                                 ? Text(
                                     initials,
                                     style: const TextStyle(fontSize: 32, color: Colors.white),

@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http_parser/http_parser.dart';
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import '../models/seller_model.dart';
@@ -37,6 +38,7 @@ class ApiService {
     Map<String, dynamic>? body,
     bool includeAuth = true,
     int timeoutSeconds = 30,
+    bool skipLogoutOn401 = false,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
@@ -75,8 +77,8 @@ class ApiService {
       
       ErrorHandler.logInfo('Response status: ${response.statusCode}');
       
-      if (response.statusCode == 401) {
-        // Token expired, logout user
+      if (response.statusCode == 401 && !skipLogoutOn401) {
+        // Token expired, logout user (but not for login/register endpoints)
         await logout();
         throw Exception('Session expired. Please login again.');
       }
@@ -96,6 +98,42 @@ class ApiService {
     } catch (e) {
       ErrorHandler.logError('Failed to parse JSON response', e);
       throw Exception('Invalid response format from server');
+    }
+  }
+
+  /// Generic POST request method
+  Future<Map<String, dynamic>> post(String endpoint, {Map<String, dynamic>? body}) async {
+    try {
+      final response = await _makeRequest('POST', endpoint, body: body);
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _parseJsonResponse(response);
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('POST request failed for $endpoint', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Generic GET request method
+  Future<Map<String, dynamic>> get(String endpoint) async {
+    try {
+      final response = await _makeRequest('GET', endpoint);
+      
+      if (response.statusCode == 200) {
+        return _parseJsonResponse(response);
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('GET request failed for $endpoint', e);
+      throw Exception(friendlyMessage);
     }
   }
 
@@ -125,7 +163,8 @@ class ApiService {
             'email': email,
             'password': password,
           },
-          includeAuth: false);
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on login failure
 
       if (response.statusCode == 200) {
         final jsonData = _parseJsonResponse(response);
@@ -178,7 +217,8 @@ class ApiService {
             if (address?.isNotEmpty == true) 'address': address,
             if (fcmToken?.isNotEmpty == true) 'fcm_token': fcmToken,
           },
-          includeAuth: false);
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on registration failure
 
       if (response.statusCode == 201) {
         final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
@@ -239,7 +279,9 @@ class ApiService {
       if (fcmToken?.isNotEmpty == true) body['fcm_token'] = fcmToken!;
 
       final response = await _makeRequest('POST', '/api/sellers/register',
-          body: body, includeAuth: false);
+          body: body, 
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on registration failure
 
       if (response.statusCode == 201) {
         final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
@@ -279,7 +321,8 @@ class ApiService {
             'email': email,
             'password': password,
           },
-          includeAuth: false);
+          includeAuth: false,
+          skipLogoutOn401: true); // Don't auto-logout on login failure
 
       if (response.statusCode == 200) {
         final authResponse = AuthResponse.fromJson(_parseJsonResponse(response));
@@ -786,40 +829,6 @@ class ApiService {
     }
   }
 
-  /// Upload spare part image
-  Future<String> uploadSparePartImage(String imagePath) async {
-    try {
-      final uri = Uri.parse('$baseUrl/api/upload/spare-part-image');
-      final request = http.MultipartRequest('POST', uri);
-      
-      // Add authentication header
-      final token = await storage.read(key: 'auth_token');
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
-      
-      // Add image file
-      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
-      
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      
-      if (response.statusCode == 200) {
-        final result = _parseJsonResponse(response);
-        final imageUrl = result['url'] ?? result['image_url'];
-        ErrorHandler.logInfo('Spare part image uploaded successfully');
-        return imageUrl;
-      } else {
-        final errorMessage = ErrorHandler.handleHttpError(response);
-        throw Exception(errorMessage);
-      }
-    } catch (e) {
-      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
-      ErrorHandler.logError('Failed to upload spare part image', e);
-      throw Exception(friendlyMessage);
-    }
-  }
-
   /// Upload profile picture
   Future<String> uploadProfilePicture(String imagePath) async {
     try {
@@ -918,6 +927,74 @@ class ApiService {
       print('💥 API call failed: $e');
       final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
       ErrorHandler.logError('Failed to predict lifecycle', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Upload spare part image for request
+  Future<String> uploadSparePartImage(String imagePath) async {
+    try {
+      print('📸 Uploading spare part image...');
+      print('📁 Image path: $imagePath');
+
+      final uri = Uri.parse('$baseUrl/api/spare-parts/upload-image');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Check if image file exists
+      final imageFile = File(imagePath);
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist: $imagePath');
+      }
+
+      // Add image file with explicit content type
+      String contentType = 'image/jpeg';
+      if (imagePath.toLowerCase().endsWith('.png')) {
+        contentType = 'image/png';
+      } else if (imagePath.toLowerCase().endsWith('.gif')) {
+        contentType = 'image/gif';
+      } else if (imagePath.toLowerCase().endsWith('.webp')) {
+        contentType = 'image/webp';
+      }
+      
+      final multipartFile = await http.MultipartFile.fromPath(
+        'image',
+        imagePath,
+        contentType: MediaType.parse(contentType),
+      );
+      request.files.add(multipartFile);
+      print('🖼️ Image file added to request with content type: $contentType');
+
+      // Send request
+      print('📤 Sending upload request...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 Response received: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        final imageUrl = result['image_url'] as String?;
+        if (imageUrl == null || imageUrl.isEmpty) {
+          throw Exception('No image URL returned from server');
+        }
+        print('✅ Image uploaded successfully: $imageUrl');
+        ErrorHandler.logInfo('Spare part image uploaded successfully');
+        return imageUrl;
+      } else {
+        print('❌ Upload Error: ${response.statusCode} - ${response.body}');
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('💥 Image upload failed: $e');
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to upload spare part image', e);
       throw Exception(friendlyMessage);
     }
   }

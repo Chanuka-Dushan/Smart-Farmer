@@ -46,19 +46,23 @@ class ErrorHandler {
 
   /// Handle HTTP response errors
   static String handleHttpError(http.Response response) {
+    // Try to parse error message from response body first
+    final parsedMessage = _parseErrorMessage(response.body);
+    
     switch (response.statusCode) {
       case 400:
-        return _parseErrorMessage(response.body) ?? 'Bad request. Please check your input.';
+        return parsedMessage ?? 'Bad request. Please check your input.';
       case 401:
-        return 'Session expired. Please login again.';
+        // For 401, use parsed message if available (for login failures)
+        return parsedMessage ?? 'Invalid email or password.';
       case 403:
-        return 'Access denied. You don\'t have permission for this action.';
+        return parsedMessage ?? 'Access denied. You don\'t have permission for this action.';
       case 404:
-        return 'Resource not found. Please try again.';
+        return parsedMessage ?? 'Resource not found. Please try again.';
       case 409:
-        return 'Data conflict. This resource may already exist.';
+        return parsedMessage ?? 'Data conflict. This resource may already exist.';
       case 422:
-        return _parseErrorMessage(response.body) ?? 'Invalid data provided.';
+        return parsedMessage ?? 'Invalid data provided.';
       case 429:
         return 'Too many requests. Please try again later.';
       case 500:
@@ -70,7 +74,7 @@ class ErrorHandler {
       case 504:
         return 'Request timeout. Please check your connection and try again.';
       default:
-        return 'Unexpected error occurred (${response.statusCode}). Please try again.';
+        return parsedMessage ?? 'Unexpected error occurred (${response.statusCode}). Please try again.';
     }
   }
 
@@ -205,21 +209,36 @@ class ErrorHandler {
   /// Parse error message from API response
   static String? _parseErrorMessage(String responseBody) {
     try {
-      final Map<String, dynamic> errorData = 
-          responseBody.isNotEmpty ? 
-          (responseBody.startsWith('{') ? 
-           _parseJson(responseBody) : 
-           {'detail': responseBody}) : 
-          {};
+      if (responseBody.isEmpty) return null;
       
-      return errorData['detail'] ?? 
-             errorData['message'] ?? 
-             errorData['error'] ??
-             (errorData['errors']?.isNotEmpty == true ? 
-              errorData['errors'][0] : null);
+      // If it's not JSON, return as-is
+      if (!responseBody.trim().startsWith('{') && !responseBody.trim().startsWith('[')) {
+        return responseBody.trim();
+      }
+      
+      final Map<String, dynamic> errorData = _parseJson(responseBody);
+      
+      // Try multiple possible error field names
+      String? message = errorData['detail'] ?? 
+                       errorData['message'] ?? 
+                       errorData['error'] ??
+                       errorData['msg'];
+      
+      // Check for errors array
+      if (message == null && errorData['errors'] != null) {
+        final errors = errorData['errors'];
+        if (errors is List && errors.isNotEmpty) {
+          message = errors[0].toString();
+        } else if (errors is String) {
+          message = errors;
+        }
+      }
+      
+      return message;
     } catch (e) {
       logError('Failed to parse error message', e);
-      return null;
+      // Return the original body if JSON parsing fails
+      return responseBody.length < 200 ? responseBody : null;
     }
   }
 
@@ -240,22 +259,35 @@ class ErrorHandler {
       return handleHttpError(error);
     }
     
-    final errorString = error.toString().toLowerCase();
+    // Extract actual message from Exception
+    String errorString = error.toString();
+    if (errorString.startsWith('Exception: ')) {
+      errorString = errorString.substring('Exception: '.length);
+    }
+    
+    final lowerErrorString = errorString.toLowerCase();
     
     // Check for specific error types
-    if (errorString.contains('socket') || 
-        errorString.contains('network') ||
-        errorString.contains('connection')) {
+    if (lowerErrorString.contains('socket') || 
+        lowerErrorString.contains('network') ||
+        lowerErrorString.contains('connection')) {
       return handleNetworkError(error);
-    } else if (errorString.contains('auth') || 
-               errorString.contains('login') ||
-               errorString.contains('token')) {
-      return handleAuthError(error);
-    } else if (errorString.contains('permission')) {
+    } else if (lowerErrorString.contains('invalid email or password')) {
+      return errorString; // Return the actual message
+    } else if (lowerErrorString.contains('email already registered')) {
+      return errorString; // Return the actual message
+    } else if (lowerErrorString.contains('banned') || lowerErrorString.contains('suspended')) {
+      return errorString; // Return the actual message
+    } else if (lowerErrorString.contains('permission')) {
       return handlePermissionError(error);
-    } else if (errorString.contains('file') || 
-               errorString.contains('storage')) {
+    } else if (lowerErrorString.contains('file') || 
+               lowerErrorString.contains('storage')) {
       return handleFileError(error);
+    } else if (lowerErrorString.contains('timeout')) {
+      return 'Request timeout. Please check your connection and try again.';
+    } else if (errorString.length > 0 && !errorString.contains('null')) {
+      // Return the actual error message if it's meaningful
+      return errorString;
     } else {
       return 'An unexpected error occurred. Please try again.';
     }

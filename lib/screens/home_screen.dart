@@ -6,6 +6,8 @@ import 'predict_screen.dart';
 import 'scan_screen.dart';
 import 'supplier_screen.dart';
 import 'profile_screen.dart';
+import 'shop_map_screen.dart';
+import 'spare_part_scan_screen.dart';
 import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 import '../services/api_service.dart';
@@ -202,15 +204,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 final String email = auth.isSeller ? (auth.seller?.email ?? "") : (auth.user?.email ?? "");
                 final String? picUrl = auth.isSeller ? auth.seller?.logoUrl : auth.user?.profilePictureUrl;
                 
+                // Debug logging
+                print('🖼️ Profile picture URL: $picUrl');
+                if (picUrl == null || picUrl.isEmpty) {
+                  print('⚠️ No profile picture URL available');
+                }
+                
                 return UserAccountsDrawerHeader(
                   accountName: Text(displayName),
                   accountEmail: Text(email),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
-                    backgroundImage: picUrl != null 
-                      ? NetworkImage(picUrl)  // Use URL directly (supports full Spaces URLs)
+                    backgroundImage: picUrl != null && picUrl.isNotEmpty
+                      ? NetworkImage(
+                          picUrl,
+                          headers: {
+                            'Cache-Control': 'no-cache',
+                          },
+                        ) as ImageProvider
                       : null,
-                    child: picUrl == null ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)) : null,
+                    child: picUrl == null || picUrl.isEmpty
+                      ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32))
+                      : null,
                   ),
                   decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
                 );
@@ -573,7 +588,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const ScanScreen()))
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const SparePartScanScreen()))
                 .then((_) => setState(() => _selectedIndex = 0));
           } else if (index == 2) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()))
