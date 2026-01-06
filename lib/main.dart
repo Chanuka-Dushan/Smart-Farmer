@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'utils/error_handler.dart';
@@ -24,6 +25,7 @@ import 'screens/payment_screen.dart';
 import 'services/l10n.dart';
 import 'services/theme_service.dart';
 import 'providers/auth_provider.dart';
+import 'config/app_config.dart';
 
 import 'screens/nlp_search_screen.dart';
 import 'screens/compatibility_screen.dart';
@@ -47,6 +49,16 @@ Future<void> main() async {
   try {
     // Load environment variables
     await dotenv.load(fileName: ".env");
+    
+    // Initialize Stripe
+    try {
+      Stripe.publishableKey = AppConfig.stripePublishableKey;
+      await Stripe.instance.applySettings();
+      ErrorHandler.logInfo('Stripe initialized successfully');
+    } catch (e) {
+      ErrorHandler.logWarning('Failed to initialize Stripe: $e');
+      // Continue with app startup even if Stripe fails
+    }
     
     // Initialize Firebase
     await Firebase.initializeApp(

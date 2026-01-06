@@ -41,4 +41,33 @@ class AppConfig {
       return 'pk_test_51SLiluIumKJBzyfFy3xnrCLzNWveG05qWlF2MboAkZmwUKe4LAro8cUKuXakXd2navyoCg6bKtmVaKkA8QdguJZI00Dn9lzOt2';
     }
   }
+  
+  /// Convert relative image URLs to absolute URLs
+  /// If the URL already has a host (http/https), return as-is
+  /// If it's a relative path, prepend the base URL
+  static String getFullImageUrl(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return '';
+    }
+    
+    // If already a complete URL, return as-is
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    
+    // Remove 'file:///' prefix if present
+    if (imageUrl.startsWith('file:///')) {
+      imageUrl = imageUrl.substring(7); // Remove 'file:///'
+    }
+    
+    // Remove leading slash if present (we'll add it back)
+    final path = imageUrl.startsWith('/') ? imageUrl : '/$imageUrl';
+    
+    // Get base URL without trailing slash
+    final base = apiBaseUrl.endsWith('/') 
+        ? apiBaseUrl.substring(0, apiBaseUrl.length - 1)
+        : apiBaseUrl;
+    
+    return '$base$path';
+  }
 }

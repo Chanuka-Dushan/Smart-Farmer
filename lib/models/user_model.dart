@@ -6,6 +6,7 @@ class User {
   final String? phoneNumber;
   final String? address;
   final String? profilePictureUrl;
+  final bool isSocialLogin;
   final bool isBanned;
   final bool isDeleted;
   final DateTime createdAt;
@@ -19,6 +20,7 @@ class User {
     this.phoneNumber,
     this.address,
     this.profilePictureUrl,
+    this.isSocialLogin = false,
     required this.isBanned,
     required this.isDeleted,
     required this.createdAt,
@@ -34,6 +36,7 @@ class User {
       phoneNumber: json['phone_number'] is String ? json['phone_number'] : null,
       address: json['address'] is String ? json['address'] : null,
       profilePictureUrl: json['profile_picture_url'] is String ? json['profile_picture_url'] : null,
+      isSocialLogin: json['is_social_login'] ?? false,
       isBanned: json['is_banned'] ?? false,
       isDeleted: json['is_deleted'] ?? false,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
@@ -50,6 +53,7 @@ class User {
       'phone_number': phoneNumber,
       'address': address,
       'profile_picture_url': profilePictureUrl,
+      'is_social_login': isSocialLogin,
       'is_banned': isBanned,
       'is_deleted': isDeleted,
       'created_at': createdAt.toIso8601String(),
@@ -68,6 +72,7 @@ class User {
     String? phoneNumber,
     String? address,
     String? profilePictureUrl,
+    bool? isSocialLogin,
     bool? isBanned,
     bool? isDeleted,
     DateTime? createdAt,
@@ -81,6 +86,7 @@ class User {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       address: address ?? this.address,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      isSocialLogin: isSocialLogin ?? this.isSocialLogin,
       isBanned: isBanned ?? this.isBanned,
       isDeleted: isDeleted ?? this.isDeleted,
       createdAt: createdAt ?? this.createdAt,

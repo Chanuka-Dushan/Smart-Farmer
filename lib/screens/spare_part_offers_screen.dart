@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/l10n_extension.dart';
+import '../config/app_config.dart';
 import 'spare_part_map_screen.dart';
 
 class SparePartOffersScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class SparePartOffersScreen extends StatefulWidget {
 class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
   List<dynamic> _offers = [];
   bool _isLoading = true;
+  final Map<int, Map<String, dynamic>> _sellerCache = {}; // Cache seller data
 
   @override
   void initState() {
@@ -186,8 +188,13 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
               itemCount: _offers.length,
               itemBuilder: (context, index) {
                 final offer = _offers[index];
-                final seller = offer['seller'] ?? {};
                 final status = offer['status'] ?? 'pending';
+                final sellerId = offer['seller_id'] as int?;
+                
+                // Use seller ID as display name since backend doesn't provide seller details
+                final sellerName = 'Seller #${sellerId ?? "Unknown"}';
+                final sellerAddress = 'Contact for details';
+                final sellerLogoUrl = null; // No logo available
                 
                 return Card(
                    elevation: 4,
@@ -199,20 +206,13 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
                       ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.green[100],
-                          backgroundImage: seller['logo_url'] != null 
-                            ? NetworkImage(seller['logo_url'])  // Use URL directly
-                            : null,
-                          child: seller['logo_url'] == null ? const Icon(Icons.store) : null,
+                          child: const Icon(Icons.store, color: Colors.green),
                         ),
                         title: Text(
-                          seller['business_name'] ?? 'Unknown store',
+                          sellerName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Text(
-                          seller['business_address'] ?? 
-                          seller['shop_location_name'] ?? 
-                          'No address provided',
-                        ),
+                        subtitle: Text(sellerAddress),
                         trailing: Text(
                           'LKR ${offer['price'].toStringAsFixed(2)}',
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),

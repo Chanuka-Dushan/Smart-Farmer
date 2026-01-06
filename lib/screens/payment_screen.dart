@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
 import '../services/api_service.dart';
-import '../config/app_config.dart';
 
 class PaymentScreen extends StatefulWidget {
   final int offerId;
@@ -24,23 +23,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isProcessing = false;
   String? _errorMessage;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeStripe();
-  }
-
-  Future<void> _initializeStripe() async {
-    try {
-      // Initialize Stripe with publishable key
-      Stripe.publishableKey = AppConfig.stripePublishableKey;
-      await Stripe.instance.applySettings();
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to initialize payment: $e';
-      });
-    }
-  }
 
   Future<void> _processPayment() async {
     setState(() {

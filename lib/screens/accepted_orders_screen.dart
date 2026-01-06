@@ -37,11 +37,37 @@ class _AcceptedOrdersScreenState extends State<AcceptedOrdersScreen> {
 
       // Load offers
       _offers = await _apiService.getOffersForRequest(widget.requestId);
+      
+      print('DEBUG: Loaded ${_offers.length} offers for request ${widget.requestId}');
+      
+      // Print all offers and their statuses
+      for (var i = 0; i < _offers.length; i++) {
+        print('DEBUG: Offer $i - ID: ${_offers[i]['id']}, Status: ${_offers[i]['status']}, Seller ID: ${_offers[i]['seller_id']}');
+        print('DEBUG: Offer $i - Has seller data: ${_offers[i]['seller'] != null}');
+        if (_offers[i]['seller'] != null) {
+          print('DEBUG: Offer $i - Seller: ${_offers[i]['seller']}');
+        }
+      }
+      
       try {
         _acceptedOffer = _offers.firstWhere(
           (offer) => offer['status'] == 'accepted',
         );
+        
+        // Debug: Check if seller data exists
+        if (_acceptedOffer != null) {
+          print('DEBUG: Accepted offer found: ${_acceptedOffer!['id']}');
+          print('DEBUG: Full accepted offer data: $_acceptedOffer');
+          print('DEBUG: Seller data exists: ${_acceptedOffer!['seller'] != null}');
+          if (_acceptedOffer!['seller'] != null) {
+            print('DEBUG: Seller business name: ${_acceptedOffer!['seller']['business_name']}');
+          } else {
+            print('WARNING: Seller data is null in accepted offer!');
+            print('WARNING: Seller ID from offer: ${_acceptedOffer!['seller_id']}');
+          }
+        }
       } catch (e) {
+        print('DEBUG: No accepted offer found: $e');
         _acceptedOffer = null;
       }
 
@@ -64,6 +90,7 @@ class _AcceptedOrdersScreenState extends State<AcceptedOrdersScreen> {
 
       setState(() => _isLoading = false);
     } catch (e) {
+      print('ERROR loading order details: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -419,11 +446,24 @@ class _AcceptedOrdersScreenState extends State<AcceptedOrdersScreen> {
             _buildSectionCard(
               'Seller Information',
               Icons.store,
-              [
-                _buildDetailRow('Business Name', seller['business_name'] ?? 'N/A'),
-                _buildDetailRow('Owner', '${seller['owner_firstname'] ?? ''} ${seller['owner_lastname'] ?? ''}'.trim()),
-                _buildDetailRow('Address', seller['business_address'] ?? seller['shop_location_name'] ?? 'N/A'),
-              ],
+              seller.isEmpty 
+                ? [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'Seller information is not available for this order.',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ]
+                : [
+                    _buildDetailRow('Business Name', seller['business_name'] ?? 'Not provided'),
+                    _buildDetailRow('Owner', '${seller['owner_firstname'] ?? ''} ${seller['owner_lastname'] ?? ''}'.trim().isEmpty ? 'Not provided' : '${seller['owner_firstname'] ?? ''} ${seller['owner_lastname'] ?? ''}'.trim()),
+                    _buildDetailRow('Address', seller['business_address'] ?? seller['shop_location_name'] ?? 'Not provided'),
+                  ],
             ),
             const SizedBox(height: 16),
 

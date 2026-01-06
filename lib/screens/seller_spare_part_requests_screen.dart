@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/l10n_extension.dart';
+import '../config/app_config.dart';
 
 class SellerSparePartRequestsScreen extends StatefulWidget {
   const SellerSparePartRequestsScreen({super.key});
@@ -118,7 +119,7 @@ class _SellerSparePartRequestsScreenState extends State<SellerSparePartRequestsS
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                           child: Image.network(
-                            req['image_url'],  // Use URL directly (supports both full Spaces URLs and relative paths)
+                            AppConfig.getFullImageUrl(req['image_url']),
                             height: 200, fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Container(
                               height: 200,

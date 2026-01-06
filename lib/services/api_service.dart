@@ -542,6 +542,26 @@ class ApiService {
     }
   }
 
+  /// Get seller profile by ID
+  Future<Map<String, dynamic>> getSellerById(int sellerId) async {
+    try {
+      final response = await _makeRequest('GET', '/api/sellers/$sellerId');
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Seller details loaded successfully for seller $sellerId');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load seller details for seller $sellerId', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
   /// Update seller profile
   Future<Seller> updateSellerProfile({
     String? businessName,

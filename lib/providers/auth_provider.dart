@@ -41,13 +41,6 @@ class AuthProvider with ChangeNotifier {
           _user = await _apiService.getProfile();
           _userType = 'user';
         }
-        
-        // Clear image cache for profile pictures after loading
-        // Use a small delay to ensure profile is loaded first
-        Future.delayed(const Duration(milliseconds: 100), () {
-          _clearProfileImageCache();
-          notifyListeners(); // Notify again after cache clear
-        });
       } catch (e) {
         _isAuthenticated = false;
       }
@@ -206,28 +199,8 @@ class AuthProvider with ChangeNotifier {
       try {
         if (_userType == 'user') {
           _user = await _apiService.getProfile();
-          // Clear image cache after loading user profile
-          final userPicUrl = _user?.profilePictureUrl;
-          if (userPicUrl != null && userPicUrl.isNotEmpty) {
-            try {
-              final imageProvider = NetworkImage(userPicUrl);
-              imageProvider.evict();
-            } catch (e) {
-              // Ignore cache clearing errors
-            }
-          }
         } else if (_userType == 'seller') {
           _seller = await _apiService.getSellerProfile();
-          // Clear image cache after loading seller profile
-          final sellerLogoUrl = _seller?.logoUrl;
-          if (sellerLogoUrl != null && sellerLogoUrl.isNotEmpty) {
-            try {
-              final imageProvider = NetworkImage(sellerLogoUrl);
-              imageProvider.evict();
-            } catch (e) {
-              // Ignore cache clearing errors
-            }
-          }
         }
       } catch (e) {
         // If refresh fails, continue with existing data
@@ -612,37 +585,66 @@ class AuthProvider with ChangeNotifier {
 
     try {
       // Upload image to server and get URL
-      await _apiService.uploadProfilePicture(imagePath);
+      final imageUrl = await _apiService.uploadProfilePicture(imagePath);
       
-      // Refresh profile from server to get updated data
-      if (_userType == 'user') {
-        _user = await _apiService.getProfile();
-        // Clear cache after refresh
-        final userPicUrl = _user?.profilePictureUrl;
-        if (userPicUrl != null && userPicUrl.isNotEmpty) {
-          try {
-            final imageProvider = NetworkImage('$userPicUrl?t=${DateTime.now().millisecondsSinceEpoch}');
-            imageProvider.evict();
-          } catch (e) {
-            // Ignore cache clearing errors
-          }
-        }
-      } else if (_userType == 'seller') {
-        _seller = await _apiService.getSellerProfile();
-        // Clear cache after refresh
-        final sellerLogoUrl = _seller?.logoUrl;
-        if (sellerLogoUrl != null && sellerLogoUrl.isNotEmpty) {
-          try {
-            final imageProvider = NetworkImage(sellerLogoUrl);
-            imageProvider.evict();
-          } catch (e) {
-            // Ignore cache clearing errors
-          }
-        }
+      // Update the profile picture URL immediately
+      if (_userType == 'user' && _user != null) {
+        // Create updated user with new profile picture URL
+        _user = User(
+          id: _user!.id,
+          firstname: _user!.firstname,
+          lastname: _user!.lastname,
+          email: _user!.email,
+          phoneNumber: _user!.phoneNumber,
+          address: _user!.address,
+          profilePictureUrl: imageUrl,
+          isSocialLogin: _user!.isSocialLogin,
+          isBanned: _user!.isBanned,
+          isDeleted: _user!.isDeleted,
+          createdAt: _user!.createdAt,
+          updatedAt: DateTime.now(),
+        );
+      } else if (_userType == 'seller' && _seller != null) {
+        // Create updated seller with new logo URL
+        _seller = Seller(
+          id: _seller!.id,
+          businessName: _seller!.businessName,
+          ownerFirstname: _seller!.ownerFirstname,
+          ownerLastname: _seller!.ownerLastname,
+          email: _seller!.email,
+          phoneNumber: _seller!.phoneNumber,
+          businessAddress: _seller!.businessAddress,
+          businessDescription: _seller!.businessDescription,
+          logoUrl: imageUrl,
+          latitude: _seller!.latitude,
+          longitude: _seller!.longitude,
+          shopLocationName: _seller!.shopLocationName,
+          isVerified: _seller!.isVerified,
+          isActive: _seller!.isActive,
+          onboardingCompleted: _seller!.onboardingCompleted,
+          createdAt: _seller!.createdAt,
+          updatedAt: DateTime.now(),
+        );
       }
       
+      // Notify listeners immediately to update UI
       _isLoading = false;
       notifyListeners();
+      
+      // Then refresh profile from server in background to ensure sync
+      try {
+        if (_userType == 'user') {
+          _user = await _apiService.getProfile();
+        } else if (_userType == 'seller') {
+          _seller = await _apiService.getSellerProfile();
+        }
+        // Notify again after server refresh
+        notifyListeners();
+      } catch (e) {
+        // If background refresh fails, continue with local update
+        print('Warning: Failed to refresh profile after upload: $e');
+      }
+      
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
