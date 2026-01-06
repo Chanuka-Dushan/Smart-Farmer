@@ -464,15 +464,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             CircleAvatar(
                               radius: 50,
                               backgroundColor: const Color(0xFF2E7D32),
-                              backgroundImage: picUrl != null && picUrl.isNotEmpty
-                                ? NetworkImage(picUrl)
-                                : null,
-                              child: picUrl == null || picUrl.isEmpty
-                                ? Text(
+                              child: picUrl != null && picUrl.isNotEmpty
+                                ? ClipOval(
+                                    child: Image.network(
+                                      picUrl,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      headers: const {'Cache-Control': 'no-cache'},
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Text(
+                                          initials,
+                                          style: const TextStyle(fontSize: 32, color: Colors.white),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : Text(
                                     initials,
                                     style: const TextStyle(fontSize: 32, color: Colors.white),
-                                  ) 
-                                : null,
+                                  ),
                             ),
                             Positioned(
                               bottom: 0,

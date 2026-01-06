@@ -345,6 +345,21 @@ class AuthProvider with ChangeNotifier {
 
         _isAuthenticated = true;
         _isLoading = false;
+        
+        // Refresh profile to get latest data including profile picture
+        try {
+          if (_userType == 'user') {
+            _user = await _apiService.getProfile();
+          } else if (_userType == 'seller') {
+            _seller = await _apiService.getSellerProfile();
+          }
+          // Clear image cache to ensure new profile picture is displayed
+          _clearProfileImageCache();
+        } catch (e) {
+          // If refresh fails, continue with existing data
+          print('Warning: Failed to refresh profile after social login: $e');
+        }
+        
         notifyListeners();
         return true;
       }

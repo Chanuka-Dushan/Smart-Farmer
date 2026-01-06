@@ -214,17 +214,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   accountEmail: Text(email),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
-                    backgroundImage: picUrl != null && picUrl.isNotEmpty
-                      ? NetworkImage(
-                          picUrl,
-                          headers: {
-                            'Cache-Control': 'no-cache',
-                          },
-                        ) as ImageProvider
-                      : null,
-                    child: picUrl == null || picUrl.isEmpty
-                      ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32))
-                      : null,
+                    child: picUrl != null && picUrl.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            picUrl,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                            headers: const {'Cache-Control': 'no-cache'},
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32));
+                            },
+                          ),
+                        )
+                      : const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)),
                   ),
                   decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
                 );

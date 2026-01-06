@@ -26,35 +26,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isProcessing = false;
   String? _errorMessage;
   bool _stripeInitialized = false;
-  bool _saveCard = false;
-  List<dynamic> _savedMethods = [];
-  String? _selectedPaymentMethodId;
+
   
   @override
   void initState() {
     super.initState();
     _initializeStripe();
-    _loadSavedPaymentMethods();
-  }
-  
-  Future<void> _loadSavedPaymentMethods() async {
-    try {
-      final methods = await _apiService.getSavedPaymentMethods();
-      setState(() {
-        _savedMethods = methods;
-        // Auto-select default method if available
-        final defaultMethod = methods.firstWhere(
-          (m) => m['is_default'] == true,
-          orElse: () => methods.isNotEmpty ? methods[0] : null,
-        );
-        if (defaultMethod != null) {
-          _selectedPaymentMethodId = defaultMethod['stripe_payment_method_id'];
-        }
-      });
-    } catch (e) {
-      // Silently fail - saved methods are optional
-      print('Failed to load saved payment methods: $e');
-    }
   }
   
   Future<void> _initializeStripe() async {
@@ -144,8 +121,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // Step 1: Create payment intent
       final intentData = await _apiService.createPaymentIntent(
         widget.offerId,
-        saveCard: _saveCard,
-        paymentMethodId: _selectedPaymentMethodId,
       );
       final clientSecret = intentData['client_secret'] as String?;
       final paymentIntentId = intentData['payment_intent_id'] as String;
@@ -154,48 +129,43 @@ class _PaymentScreenState extends State<PaymentScreen> {
         throw Exception('Failed to get payment client secret');
       }
 
-      // If using saved payment method, payment might be automatically confirmed
-      // Otherwise, show payment sheet for new card
-      if (_selectedPaymentMethodId == null) {
-        // Step 2: Initialize payment sheet with Stripe SDK
-        try {
-          await Stripe.instance.initPaymentSheet(
-            paymentSheetParameters: SetupPaymentSheetParameters(
-              paymentIntentClientSecret: clientSecret,
-              merchantDisplayName: 'Smart Farmer',
-            ),
-          );
-        } on PlatformException catch (e) {
-          setState(() {
-            _errorMessage = 'Failed to initialize payment: ${e.message ?? e.code}';
-            _isProcessing = false;
-          });
-          return;
-        }
+      // Step 2: Initialize payment sheet with Stripe SDK
+      try {
+        await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+            paymentIntentClientSecret: clientSecret,
+            merchantDisplayName: 'Smart Farmer',
+          ),
+        );
+      } on PlatformException catch (e) {
+        setState(() {
+          _errorMessage = 'Failed to initialize payment: ${e.message ?? e.code}';
+          _isProcessing = false;
+        });
+        return;
+      }
 
-        // Step 3: Present payment sheet to user
-        try {
-          await Stripe.instance.presentPaymentSheet();
-        } on StripeException catch (e) {
-          // User cancelled or payment failed
-          setState(() {
-            _errorMessage = e.error.message ?? 'Payment was cancelled';
-            _isProcessing = false;
-          });
-          return;
-        } on PlatformException catch (e) {
-          setState(() {
-            _errorMessage = 'Payment error: ${e.message ?? e.code}';
-            _isProcessing = false;
-          });
-          return;
-        }
+      // Step 3: Present payment sheet to user
+      try {
+        await Stripe.instance.presentPaymentSheet();
+      } on StripeException catch (e) {
+        // User cancelled or payment failed
+        setState(() {
+          _errorMessage = e.error.message ?? 'Payment was cancelled';
+          _isProcessing = false;
+        });
+        return;
+      } on PlatformException catch (e) {
+        setState(() {
+          _errorMessage = 'Payment error: ${e.message ?? e.code}';
+          _isProcessing = false;
+        });
+        return;
       }
 
       // Step 4: Confirm payment on backend
       final result = await _apiService.confirmPayment(
         paymentIntentId,
-        saveCard: _saveCard,
       );
 
       if (!mounted) return;
@@ -206,15 +176,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
         if (mounted) {
           final paymentData = result['payment'] as Map<String, dynamic>?;
           final offerData = result['offer'] as Map<String, dynamic>?;
-          
+
           // Get transaction ID - prefer charge ID, fallback to payment intent ID
-          final transactionId = paymentData?['stripe_charge_id'] as String? ?? 
+          final transactionId = paymentData?['stripe_charge_id'] as String? ??
                                paymentData?['stripe_payment_intent_id'] as String? ??
                                paymentData?['id']?.toString();
+
+          // Get offer acceptance status - if payment succeeded, offer should be accepted
+          // Check backend response first, then fallback to assuming accepted if payment succeeded
+          final offerAccepted = offerData?['accepted'] as bool? ??
+                               offerData?['status'] == 'accepted' ??
+                               true; // Default to true if payment succeeded
+          final offerStatus = offerData?['status'] as String? ?? 'accepted';
           
-          // Get offer acceptance status
-          final offerAccepted = offerData?['accepted'] as bool? ?? false;
-          final offerStatus = offerData?['status'] as String?;
+          print('🔍 Payment confirmation result: $result');
+          print('🔍 Payment data: $paymentData');
+          print('🔍 Offer data: $offerData');
+          print('🔍 Offer accepted: $offerAccepted, status: $offerStatus');
           
           await Navigator.pushReplacement(
             context,
@@ -227,6 +205,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 offerStatus: offerStatus,
               ),
             ),
+            result: true,
           );
         }
       } else {
@@ -329,115 +308,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 32),
             // Saved Payment Methods
-            if (_savedMethods.isNotEmpty) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Saved Payment Methods',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ..._savedMethods.map((method) {
-                        final isSelected = _selectedPaymentMethodId == method['stripe_payment_method_id'];
-                        final brand = method['card_brand'] ?? 'card';
-                        final last4 = method['card_last4'] ?? '****';
-                        final expMonth = method['card_exp_month'] ?? 0;
-                        final expYear = method['card_exp_year'] ?? 0;
-                        final isDefault = method['is_default'] == true;
-                        
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedPaymentMethodId = method['stripe_payment_method_id'];
-                            });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
-                                width: isSelected ? 2 : 1,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              color: isSelected ? Colors.green[50] : Colors.white,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                                  color: isSelected ? const Color(0xFF2E7D32) : Colors.grey,
-                                ),
-                                const SizedBox(width: 12),
-                                Icon(
-                                  Icons.credit_card,
-                                  color: const Color(0xFF2E7D32),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${brand.toUpperCase()} •••• $last4',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Expires ${expMonth.toString().padLeft(2, '0')}/${expYear.toString().substring(2)}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (isDefault)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue[100],
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Text(
-                                      'DEFAULT',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _selectedPaymentMethodId = null;
-                          });
-                        },
-                        icon: const Icon(Icons.add_card),
-                        label: const Text('Use New Card'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
+
             // Only show warning if there's a specific error message about initialization
             if (_errorMessage != null && _errorMessage!.contains('configuration'))
               Container(
@@ -481,21 +352,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                     ),
                   ],
-                ),
-              ),
-            // Save card checkbox (only show if using new card)
-            if (_selectedPaymentMethodId == null)
-              Card(
-                child: CheckboxListTile(
-                  title: const Text('Save card for future payments'),
-                  subtitle: const Text('Your card will be securely saved for faster checkout'),
-                  value: _saveCard,
-                  onChanged: (value) {
-                    setState(() {
-                      _saveCard = value ?? false;
-                    });
-                  },
-                  activeColor: const Color(0xFF2E7D32),
                 ),
               ),
             const SizedBox(height: 16),

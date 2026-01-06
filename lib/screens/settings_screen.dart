@@ -182,18 +182,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: _isEditing ? _pickImage : null,
               child: Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: const Color(0xFF2E7D32).withOpacity(0.2),
-                    backgroundImage: _profileImagePath != null && _profileImagePath!.isNotEmpty
-                        ? (_profileImagePath!.startsWith('http')
-                            ? NetworkImage(_profileImagePath!)
-                            : FileImage(File(_profileImagePath!)))
-                        : null,
-                    child: _profileImagePath == null || _profileImagePath!.isEmpty
-                        ? const Icon(Icons.person, size: 60, color: Color(0xFF2E7D32))
-                        : null,
-                  ),
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: const Color(0xFF2E7D32).withOpacity(0.2),
+                      child: _profileImagePath != null && _profileImagePath!.isNotEmpty
+                          ? ClipOval(
+                              child: _profileImagePath!.startsWith('http')
+                                  ? Image.network(
+                                      _profileImagePath!,
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          const Icon(Icons.person, size: 60, color: Color(0xFF2E7D32)),
+                                    )
+                                  : Image.file(
+                                      File(_profileImagePath!),
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          const Icon(Icons.person, size: 60, color: Color(0xFF2E7D32)),
+                                    ),
+                            )
+                          : const Icon(Icons.person, size: 60, color: Color(0xFF2E7D32)),
+                    ),
                   if (_isEditing)
                     Positioned(
                       bottom: 0,

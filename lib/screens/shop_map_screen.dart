@@ -19,7 +19,8 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
   bool _isLoading = true;
   bool _showListView = false;
   latlong.LatLng? _currentLocation;
-  ShopLocation? _selectedShop;
+  ShopLocation? _nearestShop;
+  double? _nearestShopDistance;
 
   @override
   void initState() {
@@ -43,6 +44,11 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
         setState(() {
           _currentLocation = latlong.LatLng(position.latitude, position.longitude);
         });
+
+        // Calculate nearest shop if shops are loaded
+        if (_shops.isNotEmpty) {
+          _calculateNearestShop();
+        }
 
         // Move map to current location if it's the first time
         if (_markers.isEmpty) {
@@ -84,6 +90,11 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
           );
         }).toList();
       });
+      
+      // Calculate nearest shop if we have current location
+      if (_currentLocation != null && locations.isNotEmpty) {
+        _calculateNearestShop();
+      }
 
       // Move map to show all markers if available
       if (locations.isNotEmpty && mounted) {
@@ -108,9 +119,61 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
     }
   }
 
-  void _showShopDetails(ShopLocation shop) {
-    setState(() => _selectedShop = shop);
+  void _calculateNearestShop() {
+    if (_currentLocation == null || _shops.isEmpty) return;
+    
+    double minDistance = double.infinity;
+    ShopLocation? nearest;
+    
+    for (var shop in _shops) {
+      final distance = Geolocator.distanceBetween(
+        _currentLocation!.latitude,
+        _currentLocation!.longitude,
+        shop.lat,
+        shop.lng,
+      );
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearest = shop;
+      }
+    }
+    
+    setState(() {
+      _nearestShop = nearest;
+      _nearestShopDistance = minDistance;
+    });
+  }
+  
+  void _zoomToNearestShop() {
+    if (_nearestShop == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No shops available or location not found'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    _mapController.move(
+      latlong.LatLng(_nearestShop!.lat, _nearestShop!.lng),
+      16.0,
+    );
+    
+    // Show shop details
+    _showShopDetails(_nearestShop!);
+  }
+  
+  String _formatDistance(double distanceInMeters) {
+    if (distanceInMeters < 1000) {
+      return '${distanceInMeters.toStringAsFixed(0)} m';
+    } else {
+      return '${(distanceInMeters / 1000).toStringAsFixed(2)} km';
+    }
+  }
 
+  void _showShopDetails(ShopLocation shop) {
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -322,6 +385,33 @@ class _ShopMapScreenState extends State<ShopMapScreen> {
               color: Colors.black.withOpacity(0.3),
               child: const Center(
                 child: CircularProgressIndicator(),
+              ),
+            ),
+
+          // Nearest shop button
+          if (_nearestShop != null && _nearestShopDistance != null)
+            Positioned(
+              bottom: 100,
+              left: 16,
+              right: 80,
+              child: ElevatedButton.icon(
+                onPressed: _zoomToNearestShop,
+                icon: const Icon(Icons.near_me, color: Colors.white),
+                label: Text(
+                  'Nearest Shop: ${_formatDistance(_nearestShopDistance!)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  elevation: 4,
+                ),
               ),
             ),
 

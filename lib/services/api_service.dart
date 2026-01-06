@@ -101,6 +101,16 @@ class ApiService {
     }
   }
 
+  /// Parse JSON response that can be either List or Map
+  dynamic _parseJsonResponseFlexible(http.Response response) {
+    try {
+      return jsonDecode(response.body);
+    } catch (e) {
+      ErrorHandler.logError('Failed to parse JSON response', e);
+      throw Exception('Invalid response format from server');
+    }
+  }
+
   /// Generic POST request method
   Future<Map<String, dynamic>> post(String endpoint, {Map<String, dynamic>? body}) async {
     try {
@@ -835,9 +845,16 @@ class ApiService {
       final response = await _makeRequest('GET', '/api/spare-parts/my-offers');
 
       if (response.statusCode == 200) {
-        final result = _parseJsonResponse(response);
+        final result = _parseJsonResponseFlexible(response);
         ErrorHandler.logInfo('Fetched seller offers successfully');
-        return result is List ? List<dynamic>.from(result as List) : [];
+        if (result is List) {
+          return List<dynamic>.from(result);
+        } else if (result is Map && result.containsKey('offers')) {
+          // Handle case where API returns {offers: [...]}
+          return List<dynamic>.from(result['offers'] as List);
+        } else {
+          return [];
+        }
       } else {
         final errorMessage = ErrorHandler.handleHttpError(response);
         throw Exception(errorMessage);
@@ -1051,11 +1068,14 @@ class ApiService {
       final body = {
         'offer_id': offerId,
         'save_card': saveCard,
+        // Disable redirect-based payment methods for mobile app
+        'automatic_payment_methods_enabled': true,
+        'automatic_payment_methods_allow_redirects': 'never',
       };
       if (paymentMethodId != null) {
         body['payment_method_id'] = paymentMethodId;
       }
-      
+
       final response = await _makeRequest(
         'POST',
         '/api/payments/create-intent',
@@ -1083,15 +1103,26 @@ class ApiService {
   Future<Map<String, dynamic>> confirmPayment(
     String paymentIntentId, {
     bool saveCard = false,
+    String? returnUrl,
   }) async {
     try {
+      final body = {
+        'payment_intent_id': paymentIntentId,
+        'save_card': saveCard,
+      };
+      
+      // Add return_url if provided (required for 3D Secure)
+      if (returnUrl != null && returnUrl.isNotEmpty) {
+        body['return_url'] = returnUrl;
+      } else {
+        // Use default return URL for mobile app
+        body['return_url'] = 'smartfarmer://payment-return';
+      }
+      
       final response = await _makeRequest(
         'POST',
         '/api/payments/confirm',
-        body: {
-          'payment_intent_id': paymentIntentId,
-          'save_card': saveCard,
-        },
+        body: body,
       );
 
       if (response.statusCode == 200) {

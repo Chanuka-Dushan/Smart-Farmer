@@ -262,7 +262,8 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                           children: [
                             ElevatedButton.icon(
                               onPressed: () {
-                                Navigator.pop(context, true);
+                                // Return success result to trigger refresh in offers screen
+                                Navigator.of(context).pop(true);
                               },
                               icon: const Icon(Icons.check_circle),
                               label: const Text('Done'),
