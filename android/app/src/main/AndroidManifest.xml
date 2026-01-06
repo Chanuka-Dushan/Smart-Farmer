@@ -59,23 +59,8 @@
             android:value="2" />
             
         <!-- Firebase Cloud Messaging Service -->
-        <service
-            android:name="com.google.firebase.messaging.FirebaseMessagingService"
-            android:exported="false"
-            android:directBootAware="true">
-            <intent-filter android:priority="-500">
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
-        <!-- Custom FCM Service for handling background messages -->
-        <service android:name=".MyFirebaseMessagingService"
-            android:exported="false"
-            android:directBootAware="true">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+        <!-- Note: Flutter firebase_messaging plugin handles FCM automatically -->
+        <!-- No custom service needed as Flutter handles background messages -->
         
         <!-- Default notification icon -->
         <meta-data

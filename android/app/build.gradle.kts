@@ -51,4 +51,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    // Material Components for Stripe payment sheet
+    implementation("com.google.android.material:material:1.11.0")
 }

@@ -1042,12 +1042,24 @@ class ApiService {
   }
 
   /// Create payment intent for spare part order
-  Future<Map<String, dynamic>> createPaymentIntent(int offerId) async {
+  Future<Map<String, dynamic>> createPaymentIntent(
+    int offerId, {
+    bool saveCard = false,
+    String? paymentMethodId,
+  }) async {
     try {
+      final body = {
+        'offer_id': offerId,
+        'save_card': saveCard,
+      };
+      if (paymentMethodId != null) {
+        body['payment_method_id'] = paymentMethodId;
+      }
+      
       final response = await _makeRequest(
         'POST',
         '/api/payments/create-intent',
-        body: {'offer_id': offerId},
+        body: body,
       );
 
       if (response.statusCode == 200) {
@@ -1066,17 +1078,33 @@ class ApiService {
   }
 
   /// Confirm payment
-  Future<Map<String, dynamic>> confirmPayment(String paymentIntentId) async {
+  /// Returns a map with 'success' (bool) and optionally 'status' and 'message' fields
+  /// If success is false, check 'status' to see if payment is still in progress
+  Future<Map<String, dynamic>> confirmPayment(
+    String paymentIntentId, {
+    bool saveCard = false,
+  }) async {
     try {
       final response = await _makeRequest(
         'POST',
         '/api/payments/confirm',
-        body: {'payment_intent_id': paymentIntentId},
+        body: {
+          'payment_intent_id': paymentIntentId,
+          'save_card': saveCard,
+        },
       );
 
       if (response.statusCode == 200) {
         final result = _parseJsonResponse(response);
-        ErrorHandler.logInfo('Payment confirmed successfully');
+        // Backend now returns success: true/false and status field
+        // Handle both old format (success: true) and new format (success: false with status)
+        if (result['success'] == true) {
+          ErrorHandler.logInfo('Payment confirmed successfully');
+        } else {
+          final status = result['status'] as String?;
+          final message = result['message'] as String?;
+          ErrorHandler.logInfo('Payment confirmation response: status=$status, message=$message');
+        }
         return result;
       } else {
         final errorMessage = ErrorHandler.handleHttpError(response);
@@ -1125,6 +1153,70 @@ class ApiService {
     } catch (e) {
       final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
       ErrorHandler.logError('Failed to load seller payments', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get saved payment methods
+  Future<List<dynamic>> getSavedPaymentMethods() async {
+    try {
+      final response = await _makeRequest('GET', '/api/payments/saved-methods');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        ErrorHandler.logInfo('Saved payment methods loaded successfully');
+        return data;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load saved payment methods', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Delete saved payment method
+  Future<void> deleteSavedPaymentMethod(int methodId) async {
+    try {
+      final response = await _makeRequest(
+        'DELETE',
+        '/api/payments/saved-methods/$methodId',
+      );
+
+      if (response.statusCode == 200) {
+        ErrorHandler.logInfo('Payment method deleted successfully');
+        return;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to delete payment method', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Set default payment method
+  Future<void> setDefaultPaymentMethod(int methodId) async {
+    try {
+      final response = await _makeRequest(
+        'PUT',
+        '/api/payments/saved-methods/$methodId/set-default',
+      );
+
+      if (response.statusCode == 200) {
+        ErrorHandler.logInfo('Default payment method updated successfully');
+        return;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to set default payment method', e);
       throw Exception(friendlyMessage);
     }
   }

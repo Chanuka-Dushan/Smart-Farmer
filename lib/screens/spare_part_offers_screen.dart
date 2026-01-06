@@ -17,7 +17,6 @@ class SparePartOffersScreen extends StatefulWidget {
 class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
   List<dynamic> _offers = [];
   bool _isLoading = true;
-  final Map<int, Map<String, dynamic>> _sellerCache = {}; // Cache seller data
 
   @override
   void initState() {
@@ -189,12 +188,16 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
               itemBuilder: (context, index) {
                 final offer = _offers[index];
                 final status = offer['status'] ?? 'pending';
-                final sellerId = offer['seller_id'] as int?;
+                final seller = offer['seller'] as Map<String, dynamic>?;
                 
-                // Use seller ID as display name since backend doesn't provide seller details
-                final sellerName = 'Seller #${sellerId ?? "Unknown"}';
-                final sellerAddress = 'Contact for details';
-                final sellerLogoUrl = null; // No logo available
+                // Extract seller information from the offer data
+                final sellerName = seller != null 
+                    ? (seller['business_name'] ?? '${seller['owner_firstname'] ?? ''} ${seller['owner_lastname'] ?? ''}'.trim())
+                    : 'Seller #${offer['seller_id'] ?? "Unknown"}';
+                final sellerAddress = seller != null 
+                    ? (seller['business_address'] ?? seller['shop_location_name'] ?? 'Contact for details')
+                    : 'Contact for details';
+                final sellerLogoUrl = seller != null ? seller['logo_url'] : null;
                 
                 return Card(
                    elevation: 4,
@@ -204,10 +207,15 @@ class _SparePartOffersScreenState extends State<SparePartOffersScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.green[100],
-                          child: const Icon(Icons.store, color: Colors.green),
-                        ),
+                        leading: sellerLogoUrl != null && sellerLogoUrl.toString().isNotEmpty
+                            ? CircleAvatar(
+                                backgroundImage: NetworkImage(AppConfig.getFullImageUrl(sellerLogoUrl)),
+                                onBackgroundImageError: (_, __) {},
+                              )
+                            : CircleAvatar(
+                                backgroundColor: Colors.green[100],
+                                child: const Icon(Icons.store, color: Colors.green),
+                              ),
                         title: Text(
                           sellerName,
                           style: const TextStyle(fontWeight: FontWeight.bold),

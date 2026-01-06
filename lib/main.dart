@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,6 +38,7 @@ import 'screens/high_demand_parts_screen.dart';
 import 'screens/seasonal_demand_machines_screen.dart';
 import 'screens/lifecycle_prediction_screen.dart';
 import 'screens/accepted_orders_screen.dart';
+import 'screens/my_payments_screen.dart';
 
 
 Future<void> main() async {
@@ -52,9 +54,26 @@ Future<void> main() async {
     
     // Initialize Stripe
     try {
-      Stripe.publishableKey = AppConfig.stripePublishableKey;
-      await Stripe.instance.applySettings();
-      ErrorHandler.logInfo('Stripe initialized successfully');
+      final publishableKey = AppConfig.stripePublishableKey;
+      
+      // Validate publishable key
+      if (publishableKey.isEmpty || !publishableKey.startsWith('pk_')) {
+        ErrorHandler.logWarning('Invalid Stripe publishable key format');
+      } else {
+        Stripe.publishableKey = publishableKey;
+        
+        // Apply Stripe settings with error handling
+        try {
+          await Stripe.instance.applySettings();
+          ErrorHandler.logInfo('Stripe initialized successfully');
+        } on PlatformException catch (e) {
+          ErrorHandler.logWarning('Stripe PlatformException: ${e.message}');
+          ErrorHandler.logWarning('Stripe error code: ${e.code}');
+          ErrorHandler.logWarning('Stripe error details: ${e.details}');
+        } catch (e) {
+          ErrorHandler.logWarning('Failed to apply Stripe settings: $e');
+        }
+      }
     } catch (e) {
       ErrorHandler.logWarning('Failed to initialize Stripe: $e');
       // Continue with app startup even if Stripe fails
@@ -92,8 +111,61 @@ Future<void> main() async {
   );
 }
 
-class SmartSparePartApp extends StatelessWidget {
+class SmartSparePartApp extends StatefulWidget {
   const SmartSparePartApp({super.key});
+
+  @override
+  State<SmartSparePartApp> createState() => _SmartSparePartAppState();
+}
+
+class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Re-initialize notifications when app starts
+    _initializeNotifications();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App came to foreground - re-initialize notifications
+        _initializeNotifications();
+        break;
+      case AppLifecycleState.paused:
+        // App went to background
+        break;
+      case AppLifecycleState.inactive:
+        // App is transitioning
+        break;
+      case AppLifecycleState.detached:
+        // App is being terminated
+        break;
+      case AppLifecycleState.hidden:
+        // App is hidden
+        break;
+    }
+  }
+
+  Future<void> _initializeNotifications() async {
+    try {
+      // Re-initialize notification service to ensure it's working
+      await NotificationService.instance.initialize();
+      ErrorHandler.logInfo('Notifications re-initialized on app state change');
+    } catch (e) {
+      ErrorHandler.logError('Failed to re-initialize notifications', e);
+      // Don't crash the app, just log the error
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +217,7 @@ class SmartSparePartApp extends StatelessWidget {
             totalAmount: args['total_amount'] as double,
           );
         },
+        '/transaction-history': (context) => const MyPaymentsScreen(),
       },
     );
   }

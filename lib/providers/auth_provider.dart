@@ -53,14 +53,25 @@ class AuthProvider with ChangeNotifier {
     try {
       final userPicUrl = _user?.profilePictureUrl;
       if (userPicUrl != null && userPicUrl.isNotEmpty) {
-        final imageProvider = NetworkImage(userPicUrl);
-        imageProvider.evict();
+        try {
+          final imageProvider = NetworkImage(userPicUrl);
+          imageProvider.evict();
+        } catch (e) {
+          // If eviction fails, continue to clear entire cache
+        }
       }
       final sellerLogoUrl = _seller?.logoUrl;
       if (sellerLogoUrl != null && sellerLogoUrl.isNotEmpty) {
-        final imageProvider = NetworkImage(sellerLogoUrl);
-        imageProvider.evict();
+        try {
+          final imageProvider = NetworkImage(sellerLogoUrl);
+          imageProvider.evict();
+        } catch (e) {
+          // If eviction fails, continue to clear entire cache
+        }
       }
+      // Clear entire image cache to ensure profile pictures are refreshed
+      imageCache.clear();
+      imageCache.clearLiveImages();
     } catch (e) {
       // Ignore cache clearing errors
       print('Warning: Failed to clear image cache: $e');
@@ -349,6 +360,9 @@ class AuthProvider with ChangeNotifier {
 
   /// Logout user
   Future<void> logout() async {
+    // Clear image cache before logout
+    _clearProfileImageCache();
+    
     await _apiService.logout();
     _user = null;
     _seller = null;

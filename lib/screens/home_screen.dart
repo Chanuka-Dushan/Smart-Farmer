@@ -269,6 +269,14 @@ class _HomeScreenState extends State<HomeScreen> {
                    Navigator.pushNamed(context, '/my-spare-part-requests');
                  },
                ),
+               ListTile(
+                 leading: const Icon(Icons.payment_rounded),
+                 title: const Text("Transaction History"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/transaction-history');
+                 },
+               ),
             ],
             const Divider(),
             ListTile(

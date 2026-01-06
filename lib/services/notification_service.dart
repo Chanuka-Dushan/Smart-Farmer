@@ -182,14 +182,20 @@ class NotificationService {
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     try {
       debugPrint('📬 Foreground message received:');
-      debugPrint('Title: ${message.notification?.title}');
-      debugPrint('Body: ${message.notification?.body}');
+      debugPrint('Title: ${message.notification?.title ?? "No title"}');
+      debugPrint('Body: ${message.notification?.body ?? "No body"}');
       debugPrint('Data: ${message.data}');
 
       // Show local notification when app is in foreground
-      await _showLocalNotification(message);
+      try {
+        await _showLocalNotification(message);
+      } catch (e) {
+        ErrorHandler.logError('Failed to show local notification', e);
+        // Don't rethrow, just log the error
+      }
     } catch (e) {
       ErrorHandler.logError('Failed to handle foreground message', e);
+      // Don't crash the app, just log the error
     }
   }
 
@@ -197,14 +203,22 @@ class NotificationService {
   Future<void> _handleMessageOpened(RemoteMessage message) async {
     try {
       debugPrint('📬 Message opened:');
-      debugPrint('Title: ${message.notification?.title}');
-      debugPrint('Body: ${message.notification?.body}');
+      debugPrint('Title: ${message.notification?.title ?? "No title"}');
+      debugPrint('Body: ${message.notification?.body ?? "No body"}');
       debugPrint('Data: ${message.data}');
 
       // Handle navigation based on message data
-      await _handleNotificationAction(message.data);
+      try {
+        if (message.data.isNotEmpty) {
+          await _handleNotificationAction(message.data);
+        }
+      } catch (e) {
+        ErrorHandler.logError('Failed to handle notification action', e);
+        // Don't rethrow, just log the error
+      }
     } catch (e) {
       ErrorHandler.logError('Failed to handle message opened', e);
+      // Don't crash the app, just log the error
     }
   }
 
@@ -247,15 +261,22 @@ class NotificationService {
         iOS: iosDetails,
       );
 
+      final title = message.notification?.title ?? 'Smart Farmer';
+      final body = message.notification?.body ?? 'New notification';
+      final payload = message.data.isNotEmpty 
+          ? message.data.toString() 
+          : null;
+
       await _localNotifications.show(
         message.hashCode,
-        message.notification?.title ?? 'Smart Farmer',
-        message.notification?.body ?? 'New notification',
+        title,
+        body,
         details,
-        payload: message.data.isNotEmpty ? message.data.toString() : null,
+        payload: payload,
       );
     } catch (e) {
       ErrorHandler.logError('Failed to show local notification', e);
+      // Don't rethrow, just log the error
     }
   }
 
@@ -276,7 +297,8 @@ class NotificationService {
   Future<void> _handleNotificationAction(Map<String, dynamic> data) async {
     try {
       final action = data['action'];
-      final type = data['type'];
+      // type is available for future use if needed
+      // final type = data['type'];
 
       switch (action) {
         case 'open_weather':
@@ -385,14 +407,15 @@ class NotificationService {
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    debugPrint('📬 Background message: ${message.messageId}');
-    debugPrint('Title: ${message.notification?.title}');
-    debugPrint('Body: ${message.notification?.body}');
+    debugPrint('📬 Background message: ${message.messageId ?? "unknown"}');
+    debugPrint('Title: ${message.notification?.title ?? "No title"}');
+    debugPrint('Body: ${message.notification?.body ?? "No body"}');
     debugPrint('Data: ${message.data}');
     
     // Handle background message processing here
     // Note: You cannot update UI from here
   } catch (e) {
     debugPrint('❌ Error in background handler: $e');
+    // Don't rethrow, just log the error to prevent crashes
   }
 }
