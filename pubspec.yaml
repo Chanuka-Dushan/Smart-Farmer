@@ -42,8 +42,8 @@ dependencies:
   provider: ^6.1.2
   permission_handler: ^11.3.1
   flutter_secure_storage: ^9.0.0
-  firebase_core: ^2.24.2
-  firebase_messaging: ^14.7.9
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.2
   flutter_local_notifications: ^17.0.0  # Added for better notification handling
   flutter_map: ^6.1.0
   latlong2: ^0.9.1
@@ -52,6 +52,11 @@ dependencies:
   flutter_facebook_auth: ^7.0.1  # For Facebook authentication
   lottie: ^3.1.0  # For animations
   url_launcher: ^6.2.5  # For making phone calls and opening URLs
+  flutter_stripe: ^11.1.0  # For Stripe payment processing
+  pdf: ^3.10.7  # For PDF generation
+  path_provider: ^2.1.1  # For file system access
+  share_plus: ^7.2.1  # For sharing PDF files
+  intl: ^0.19.0  # For date formatting
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +83,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - .env
+    - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

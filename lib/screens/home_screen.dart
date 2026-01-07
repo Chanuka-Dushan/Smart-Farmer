@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'predict_screen.dart';
 import 'scan_screen.dart';
 import 'supplier_screen.dart';
 import 'profile_screen.dart';
@@ -17,7 +16,6 @@ import '../providers/auth_provider.dart';
 import 'nlp_search_screen.dart';
 import 'compatibility_screen.dart';
 import 'inventory_optimization_screen.dart';
-import 'lifecycle_prediction_screen.dart';
 import 'lifecycle_prediction_screen.dart';
 import 'upload_image_screen.dart';
 import 'favourite_screen.dart';
@@ -217,17 +215,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   accountEmail: Text(email),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
-                    backgroundImage: picUrl != null && picUrl.isNotEmpty
-                      ? NetworkImage(
-                          picUrl,
-                          headers: {
-                            'Cache-Control': 'no-cache',
-                          },
-                        ) as ImageProvider
-                      : null,
-                    child: picUrl == null || picUrl.isEmpty
-                      ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32))
-                      : null,
+                    child: picUrl != null && picUrl.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            picUrl,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                            headers: const {'Cache-Control': 'no-cache'},
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32));
+                            },
+                          ),
+                        )
+                      : const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)),
                   ),
                   decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
                 );
@@ -255,6 +256,14 @@ class _HomeScreenState extends State<HomeScreen> {
                    Navigator.pushNamed(context, '/seller-spare-part-requests');
                  },
                ),
+               ListTile(
+                 leading: const Icon(Icons.business_center),
+                 title: const Text("My Offerings"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/my-offerings');
+                 },
+               ),
             ] else ...[
                ListTile(
                  leading: const Icon(Icons.search_rounded),
@@ -270,6 +279,14 @@ class _HomeScreenState extends State<HomeScreen> {
                  onTap: () {
                    Navigator.pop(context);
                    Navigator.pushNamed(context, '/my-spare-part-requests');
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.payment_rounded),
+                 title: const Text("Transaction History"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/transaction-history');
                  },
                ),
             ],
@@ -457,19 +474,6 @@ class _HomeScreenState extends State<HomeScreen> {
             // --- Feature Cards ---
             if (!Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
             _buildAnimatedCard(
-              index: 1,
-              child: _buildFeatureCard(
-                context,
-                title: context.tr('lifespan_forecast'),
-                subtitle: context.tr('check_remaining_hours'),
-                icon: Icons.auto_graph_rounded,
-                color: Colors.orange.withOpacity(0.1),
-                iconColor: Colors.orange,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PredictScreen())),
-              ),
-            ),
-
-            _buildAnimatedCard(
               index: 2,
               child: _buildFeatureCard(
                 context,
@@ -478,7 +482,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.document_scanner_rounded,
                 color: Colors.blue.withOpacity(0.1),
                 iconColor: Colors.blue,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SparePartScanScreen())),
               ),
             ),
 
@@ -509,19 +513,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     SnackBar(content: Text(context.l10n.tr('blockchain_coming_soon'))),
                   );
                 },
-              ),
-            ),
-
-            _buildAnimatedCard(
-              index: 5,
-              child: _buildFeatureCard(
-                context,
-                title: context.tr('spare_part_analysis'),
-                subtitle: context.tr('analyze_part_lifecycle'),
-                icon: Icons.analytics_rounded,
-                color: Colors.teal.withOpacity(0.1),
-                iconColor: Colors.teal,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
               ),
             ),
             ], // Close the conditional for farmer features
