@@ -31,7 +31,7 @@ class RecommendationService {
   }
 
   // ==========================================================
-  // ⚖️ Comparison
+  // Comparison
   // ==========================================================
   static Future<Map<String, dynamic>> getComparison(
       int baseId, int altId) async {

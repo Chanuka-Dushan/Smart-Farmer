@@ -19,7 +19,7 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
     "MF 240",
   ];
 
-  /// 🔹 TEMP PART MAP (PP1)
+  /// TEMP PART MAP (PP1)
   /// key = "partName|brand"
   final Map<String, int> partIdMap = {
   // ---------- TAFE 45 DI ----------
