@@ -4,9 +4,9 @@ import 'l10n.dart';
 
 // Extension to easily access translations from any widget
 extension L10nExtension on BuildContext {
-  // Get translation with automatic rebuild on language change
+  // Get translation without listening (safe for callbacks/events)
   String tr(String key) {
-    return Provider.of<L10n>(this).tr(key);
+    return Provider.of<L10n>(this, listen: false).tr(key);
   }
 
   // Get L10n instance without listening (for callbacks/events)
