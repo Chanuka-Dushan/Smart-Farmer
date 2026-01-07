@@ -556,6 +556,43 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
+
+                    _buildFeatureCard(
+            context,
+            title: "Register Spare Part",
+            subtitle: "Register a part on blockchain",
+            icon: Icons.app_registration,
+            color: Colors.orange.shade100,
+            iconColor: Colors.orange,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-register');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Verify Spare Part",
+            subtitle: "Scan QR to verify authenticity",
+            icon: Icons.qr_code_scanner,
+            color: Colors.green.shade100,
+            iconColor: Colors.green,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-verify');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Transfer Ownership",
+            subtitle: "Transfer spare part ownership",
+            icon: Icons.swap_horiz,
+            color: Colors.blue.shade100,
+            iconColor: Colors.blue,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-transfer');
+            },
+          ),
+
           // ================= Smart Recommendation System =================
           const SizedBox(height: 20),
           const Text(

@@ -45,6 +45,9 @@ import 'screens/favourite_screen.dart';
 import 'screens/accepted_orders_screen.dart';
 import 'screens/my_payments_screen.dart';
 
+import 'screens/register_part_screen.dart';
+import 'screens/qr_verify_screen.dart';
+import 'screens/transfer_request_screen.dart';
 
 Future<void> main() async {
   // Ensure Flutter is initialized
@@ -208,6 +211,13 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
         '/result': (context) => ResultsScreen(),
         '/part-details': (context) => PartDetailsScreen(sparePart: {}, uploadedImage: null),
         '/favorites': (context) => const FavoritesScreen(),
+
+
+        '/blockchain-register': (context) => RegisterPartScreen(),
+        '/blockchain-verify': (context) => QRVerifyScreen(),
+        '/blockchain-transfer': (context) => TransferRequestScreen(),
+
+
 
         '/seller-onboarding': (context) => const SellerOnboardingScreen(),
         '/profile': (context) => const ProfileScreen(),
