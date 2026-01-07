@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'predict_screen.dart';
 import 'scan_screen.dart';
 import 'supplier_screen.dart';
 import 'profile_screen.dart';
 import 'shop_map_screen.dart';
-import 'spare_part_scan_screen.dart';
+//import 'spare_part_scan_screen.dart';
 import '../services/l10n.dart';
 import '../services/l10n_extension.dart';
 import '../services/api_service.dart';
@@ -18,7 +17,11 @@ import 'nlp_search_screen.dart';
 import 'compatibility_screen.dart';
 import 'inventory_optimization_screen.dart';
 import 'lifecycle_prediction_screen.dart';
-import 'lifecycle_prediction_screen.dart';
+//import 'upload_image_screen.dart';
+
+// ======= YOUR BLOCKCHAIN COMPONENT IMPORTS =======
+import 'bc_scanner_screen.dart';
+import 'bc_register_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -215,17 +218,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   accountEmail: Text(email),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
-                    backgroundImage: picUrl != null && picUrl.isNotEmpty
-                      ? NetworkImage(
-                          picUrl,
-                          headers: {
-                            'Cache-Control': 'no-cache',
-                          },
-                        ) as ImageProvider
-                      : null,
-                    child: picUrl == null || picUrl.isEmpty
-                      ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32))
-                      : null,
+                    child: picUrl != null && picUrl.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            picUrl,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                            headers: const {'Cache-Control': 'no-cache'},
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32));
+                            },
+                          ),
+                        )
+                      : const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)),
                   ),
                   decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
                 );
@@ -253,6 +259,14 @@ class _HomeScreenState extends State<HomeScreen> {
                    Navigator.pushNamed(context, '/seller-spare-part-requests');
                  },
                ),
+               ListTile(
+                 leading: const Icon(Icons.business_center),
+                 title: const Text("My Offerings"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/my-offerings');
+                 },
+               ),
             ] else ...[
                ListTile(
                  leading: const Icon(Icons.search_rounded),
@@ -268,6 +282,14 @@ class _HomeScreenState extends State<HomeScreen> {
                  onTap: () {
                    Navigator.pop(context);
                    Navigator.pushNamed(context, '/my-spare-part-requests');
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.payment_rounded),
+                 title: const Text("Transaction History"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/transaction-history');
                  },
                ),
             ],
@@ -294,14 +316,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-          
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Greeting & Weather Section (Animated) ---
+            // --- Greeting & Weather Section ---
             TweenAnimationBuilder(
               duration: const Duration(milliseconds: 800),
               tween: Tween<double>(begin: 0, end: 1),
@@ -455,19 +475,6 @@ class _HomeScreenState extends State<HomeScreen> {
             // --- Feature Cards ---
             if (!Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
             _buildAnimatedCard(
-              index: 1,
-              child: _buildFeatureCard(
-                context,
-                title: context.tr('lifespan_forecast'),
-                subtitle: context.tr('check_remaining_hours'),
-                icon: Icons.auto_graph_rounded,
-                color: Colors.orange.withOpacity(0.1),
-                iconColor: Colors.orange,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PredictScreen())),
-              ),
-            ),
-
-            _buildAnimatedCard(
               index: 2,
               child: _buildFeatureCard(
                 context,
@@ -476,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.document_scanner_rounded,
                 color: Colors.blue.withOpacity(0.1),
                 iconColor: Colors.blue,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => Scaffold(appBar: AppBar(), body: Center(child: Text("Teammate screen missing"))))),
               ),
             ),
 
@@ -509,22 +516,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+            ],
 
-            _buildAnimatedCard(
-              index: 5,
-              child: _buildFeatureCard(
+             // ================= Identification Section =================
+          const SizedBox(height: 20),
+          const Text(
+            "Identification",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+
+          _buildFeatureCard(
+            context,
+            title: "Upload Spare Part Image",
+            subtitle: "Identify and analyze parts",
+            icon: Icons.upload_rounded,
+            color: Colors.blue.shade100,
+            iconColor: Colors.blue.shade700,
+            onTap: () {
+              Navigator.push(
                 context,
-                title: context.tr('spare_part_analysis'),
-                subtitle: context.tr('analyze_part_lifecycle'),
-                icon: Icons.analytics_rounded,
-                color: Colors.teal.withOpacity(0.1),
-                iconColor: Colors.teal,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
-              ),
-            ),
-            ], // Close the conditional for farmer features
+                MaterialPageRoute(builder: (context) => Scaffold(appBar: AppBar(), body: Center(child: Text("Teammate screen missing")))),
+              );
+            },
+          ),
 
-             // ================= YOUR SECTION =================
+          // ================= Smart Recommendation System =================
           const SizedBox(height: 20),
           const Text(
             "Smart Recommendation System",
@@ -542,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => NlpSearchScreen()),
+                MaterialPageRoute(builder: (context) => Scaffold(appBar: AppBar(), body: Center(child: Text("Teammate screen missing")))),
               );
             },
           ),
@@ -576,6 +593,39 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+
+          // ================= YOUR BLOCKCHAIN SECTION =================
+          const SizedBox(height: 24),
+          const Text(
+            "Blockchain & Traceability",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          
+          _buildFeatureCard(
+            context,
+            title: "Verify Authenticity",
+            subtitle: "Scan QR for Ledger provenance",
+            icon: Icons.qr_code_scanner_rounded,
+            color: Colors.orange.shade100,
+            iconColor: Colors.orange.shade900,
+            onTap: () {
+              Navigator.pushNamed(context, '/bc-scan');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Mint New Asset",
+            subtitle: "Register part digital twins",
+            icon: Icons.add_moderator_rounded,
+            color: Colors.indigo.shade100,
+            iconColor: Colors.indigo.shade900,
+            onTap: () {
+              Navigator.pushNamed(context, '/bc-register');
+            },
+          ),
+          const SizedBox(height: 40),
           
           ],
         ),
@@ -584,13 +634,17 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         selectedItemColor: const Color(0xFF2E7D32),
         unselectedItemColor: Colors.grey,
-        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const SparePartScanScreen()))
+            Navigator.push(context, MaterialPageRoute(builder: (context) => Scaffold(appBar: AppBar(), body: Center(child: Text("Teammate screen missing")))))
                 .then((_) => setState(() => _selectedIndex = 0));
           } else if (index == 2) {
+            // Your Verify button in the Bottom Nav
+            Navigator.pushNamed(context, '/bc-scan')
+                .then((_) => setState(() => _selectedIndex = 0));
+          } else if (index == 3) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()))
                 .then((_) => setState(() => _selectedIndex = 0));
           }
@@ -598,6 +652,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.camera_alt_rounded), label: "Scan"),
+          BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: "Verify"),
           BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profile"),
         ],
       ),
@@ -606,13 +661,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAnimatedCard({required int index, required Widget child}) {
     return TweenAnimationBuilder(
-      duration: Duration(milliseconds: 400 + (index * 150)),
+      duration: const Duration(milliseconds: 800),
       tween: Tween<double>(begin: 0, end: 1),
       builder: (context, double value, child) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(0, 30 * (1 - value)),
+            offset: Offset(0, 20 * (1 - value)),
             child: child,
           ),
         );
