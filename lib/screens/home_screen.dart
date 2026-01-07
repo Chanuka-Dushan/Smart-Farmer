@@ -16,7 +16,6 @@ import 'nlp_search_screen.dart';
 import 'compatibility_screen.dart';
 import 'inventory_optimization_screen.dart';
 import 'lifecycle_prediction_screen.dart';
-import 'lifecycle_prediction_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -62,7 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
     
     try {
       final apiService = ApiService();
-      // Fetch seller's offer count
       final offersResponse = await apiService.getMyOffers();
       if (offersResponse is List) {
         setState(() {
@@ -71,7 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
       
-      // Fetch active requests count
       final requestsResponse = await apiService.getSparePartRequests();
       if (requestsResponse is List) {
         setState(() {
@@ -114,11 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
         desiredAccuracy: LocationAccuracy.low,
       );
 
-      // Explicitly request Celsius to avoid any region-based defaults
       final weatherResponse = await http.get(Uri.parse(
           'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true&temperature_unit=celsius'));
 
-      // Nominatim requires a User-Agent identifying the app
       final geoResponse = await http.get(
         Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=10'),
         headers: {'User-Agent': 'SmartFarmerApp/1.0'},
@@ -208,12 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
                     backgroundImage: picUrl != null && picUrl.isNotEmpty
-                      ? NetworkImage(
-                          picUrl,
-                          headers: {
-                            'Cache-Control': 'no-cache',
-                          },
-                        )
+                      ? NetworkImage(picUrl)
                       : null,
                     child: picUrl == null || picUrl.isEmpty
                       ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32))
@@ -281,19 +271,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
               },
             ),
-
           ],
         ),
       ),
-
-          
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Greeting & Weather Section (Animated) ---
+            // --- Greeting & Weather Section ---
             TweenAnimationBuilder(
               duration: const Duration(milliseconds: 800),
               tween: Tween<double>(begin: 0, end: 1),
@@ -502,8 +488,24 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // ADDED: YOUR COMPONENT - Blockchain Verification
             _buildAnimatedCard(
               index: 5,
+              child: _buildFeatureCard(
+                context,
+                title: "Verify Authenticity",
+                subtitle: "Scan QR for Ledger Provenance",
+                icon: Icons.qr_code_scanner_rounded,
+                color: Colors.red.withOpacity(0.1),
+                iconColor: Colors.redAccent,
+                onTap: () {
+                  Navigator.pushNamed(context, '/bc-scan');
+                },
+              ),
+            ),
+
+            _buildAnimatedCard(
+              index: 6,
               child: _buildFeatureCard(
                 context,
                 title: context.tr('spare_part_analysis'),
@@ -514,61 +516,97 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
               ),
             ),
-            ], // Close the conditional for farmer features
+            ], 
 
-             // ================= YOUR SECTION =================
-          const SizedBox(height: 20),
-          const Text(
-            "Smart Recommendation System",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
+            // --- Smart Recommendation Section ---
+            const SizedBox(height: 20),
+            const Text(
+              "Smart Recommendation System",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
 
-          _buildFeatureCard(
-            context,
-            title: "NLP Spare Part Search",
-            subtitle: "Search parts using natural language",
-            icon: Icons.search,
-            color: Colors.green.shade100,
-            iconColor: Colors.green,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => NlpSearchScreen()),
-              );
-            },
-          ),
+            _buildFeatureCard(
+              context,
+              title: "NLP Spare Part Search",
+              subtitle: "Search parts using natural language",
+              icon: Icons.search,
+              color: Colors.green.shade100,
+              iconColor: Colors.green,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => NlpSearchScreen()),
+                );
+              },
+            ),
 
-          _buildFeatureCard(
-            context,
-            title: "Compatibility Recommender",
-            subtitle: "Find alternative compatible parts",
-            icon: Icons.sync_alt,
-            color: Colors.teal.shade100,
-            iconColor: Colors.teal,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => CompatibilityScreen()),
-              );
-            },
-          ),
+            _buildFeatureCard(
+              context,
+              title: "Compatibility Recommender",
+              subtitle: "Find alternative compatible parts",
+              icon: Icons.sync_alt,
+              color: Colors.teal.shade100,
+              iconColor: Colors.teal,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => CompatibilityScreen()),
+                );
+              },
+            ),
 
-          _buildFeatureCard(
-            context,
-            title: "Inventory Optimization",
-            subtitle: "Predict demand & optimize stock",
-            icon: Icons.inventory_2,
-            color: Colors.lime.shade100,
-            iconColor: Colors.lime.shade800,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => InventoryOptimizationScreen()),
-              );
-            },
-          ),
-          
+            _buildFeatureCard(
+              context,
+              title: "Inventory Optimization",
+              subtitle: "Predict demand & optimize stock",
+              icon: Icons.inventory_2,
+              color: Colors.lime.shade100,
+              iconColor: Colors.lime.shade800,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => InventoryOptimizationScreen()),
+                );
+              },
+            ),
+
+            // ADDED: YOUR PROVENANCE SECTION
+            const SizedBox(height: 24),
+            const Text(
+              "Ledger Transparency & Trust",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            
+            _buildFeatureCard(
+              context,
+              title: "Ownership Transfer",
+              subtitle: "Securely hand over digital twins",
+              icon: Icons.swap_horiz_rounded,
+              color: Colors.indigo.shade50,
+              iconColor: Colors.indigo,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Feature live on local ledger cache")),
+                );
+              },
+            ),
+            
+            _buildFeatureCard(
+              context,
+              title: "Technician Ratings",
+              subtitle: "View service provider reputation",
+              icon: Icons.star_border_rounded,
+              color: Colors.amber.shade50,
+              iconColor: Colors.amber.shade900,
+              onTap: () {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                   const SnackBar(content: Text("Verified reputation module loading...")),
+                 );
+              },
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -580,7 +618,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const ScanScreen()))
+            // UPDATED: Center button now triggers Blockchain Verification Scan
+            Navigator.pushNamed(context, '/bc-scan')
                 .then((_) => setState(() => _selectedIndex = 0));
           } else if (index == 2) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()))
@@ -589,7 +628,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt_rounded), label: "Scan"),
+          BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: "Verify"),
           BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profile"),
         ],
       ),

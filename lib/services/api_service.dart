@@ -947,4 +947,66 @@ class ApiService {
       throw Exception(friendlyMessage);
     }
   }
+
+  // ==================== Blockchain & Ledger Management ====================
+
+  /// Verify a part's authenticity using its QR code serial
+  Future<Map<String, dynamic>> verifyBlockchainPart(String qrCode) async {
+    try {
+      // Use the team's _makeRequest (GET) - No auth required for public verification
+      final response = await _makeRequest('GET', '/api/blockchain/verify/$qrCode', includeAuth: false);
+
+      if (response.statusCode == 200) {
+        return _parseJsonResponse(response);
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      ErrorHandler.logError('Blockchain verification failed', e);
+      throw Exception(ErrorHandler.getUserFriendlyMessage(e));
+    }
+  }
+
+  /// Mint a new digital twin on the blockchain ledger
+  Future<void> registerPartOnLedger({
+    required int partId,
+    required String serialNumber,
+    required int manufacturerId,
+  }) async {
+    try {
+      final body = {
+        'part_id': partId,
+        'serial_number': serialNumber,
+        'manufacturer_id': manufacturerId,
+      };
+
+      final response = await _makeRequest('POST', '/api/blockchain/register', body: body);
+
+      if (response.statusCode != 200) {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+      ErrorHandler.logInfo('Asset successfully registered on Ledger');
+    } catch (e) {
+      ErrorHandler.logError('Ledger registration failed', e);
+      throw Exception(ErrorHandler.getUserFriendlyMessage(e));
+    }
+  }
+
+  /// Securely transfer ownership of a part to a new user
+  Future<void> transferLedgerOwnership(int bcMapId, int buyerId) async {
+    try {
+      final body = {'bc_map_id': bcMapId, 'buyer_id': buyerId};
+      final response = await _makeRequest('POST', '/api/blockchain/transfer', body: body);
+
+      if (response.statusCode != 200) {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      ErrorHandler.logError('Ledger ownership transfer failed', e);
+      throw Exception(ErrorHandler.getUserFriendlyMessage(e));
+    }
+  }
 }

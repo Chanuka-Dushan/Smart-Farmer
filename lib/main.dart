@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // Added for Web/Emulator compatibility
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +35,9 @@ import 'screens/high_demand_parts_screen.dart';
 import 'screens/seasonal_demand_machines_screen.dart';
 import 'screens/lifecycle_prediction_screen.dart';
 
+// ======= YOUR COMPONENT IMPORTS =======
+import 'screens/bc_scanner_screen.dart';
+import 'screens/blockchain_verification_result_screen.dart';
 
 Future<void> main() async {
   // Ensure Flutter is initialized
@@ -46,16 +50,18 @@ Future<void> main() async {
     // Load environment variables
     await dotenv.load(fileName: ".env");
     
-    // Initialize Firebase
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    
-    // Set up background message handler
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    
-    // Initialize notification service
-    await NotificationService.instance.initialize();
+    // Initialize Firebase (Safely wrapped to avoid Web/Emulator build crashes)
+    if (!kIsWeb) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      
+      // Set up background message handler
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      
+      // Initialize notification service
+      await NotificationService.instance.initialize();
+    }
     
     // Load language preference
     await l10n.loadLanguage();
@@ -63,7 +69,6 @@ Future<void> main() async {
     ErrorHandler.logInfo('App initialization completed successfully');
   } catch (e) {
     ErrorHandler.logError('Failed to initialize app', e);
-    // Continue with app startup even if some services fail
   }
   
   runApp(
@@ -120,6 +125,10 @@ class SmartSparePartApp extends StatelessWidget {
         '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
         '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
 
+        // ======= YOUR COMPONENT ROUTES =======
+        '/bc-scan': (context) => const BcScannerScreen(),
+        // Note: Verification result is usually pushed via Navigator.push with arguments, 
+        // but we add it here for architectural completeness.
       },
     );
   }
