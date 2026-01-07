@@ -35,9 +35,12 @@ import 'screens/high_demand_parts_screen.dart';
 import 'screens/seasonal_demand_machines_screen.dart';
 import 'screens/lifecycle_prediction_screen.dart';
 
-// ======= YOUR COMPONENT IMPORTS =======
+// ======= BLOCKCHAIN COMPONENT IMPORTS =======
 import 'screens/bc_scanner_screen.dart';
 import 'screens/blockchain_verification_result_screen.dart';
+import 'screens/bc_register_screen.dart';
+import 'screens/bc_transfer_screen.dart';
+import 'screens/bc_rating_screen.dart';
 
 Future<void> main() async {
   // Ensure Flutter is initialized
@@ -102,7 +105,7 @@ class SmartSparePartApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/language': (context) => const LanguageSelectionScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
-        '/home': (context) => HomeScreen(),
+        '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),   
         '/register': (context) => const RegisterScreen(),
         '/seller-register': (context) => const SellerRegisterScreen(),
@@ -125,10 +128,11 @@ class SmartSparePartApp extends StatelessWidget {
         '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
         '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
 
-        // ======= YOUR COMPONENT ROUTES =======
+        // ======= YOUR BLOCKCHAIN COMPONENT ROUTES =======
         '/bc-scan': (context) => const BcScannerScreen(),
-        // Note: Verification result is usually pushed via Navigator.push with arguments, 
-        // but we add it here for architectural completeness.
+        '/bc-register': (context) => const BcRegisterScreen(),
+        '/bc-transfer': (context) => const BcTransferScreen(),
+        '/bc-rating': (context) => const BcRatingScreen(),
       },
     );
   }
