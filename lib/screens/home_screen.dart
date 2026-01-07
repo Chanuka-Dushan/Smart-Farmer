@@ -207,6 +207,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 final String email = auth.isSeller ? (auth.seller?.email ?? "") : (auth.user?.email ?? "");
                 final String? picUrl = auth.isSeller ? auth.seller?.logoUrl : auth.user?.profilePictureUrl;
                 
+                // Debug logging
+                print('🖼️ Profile picture URL: $picUrl');
+                if (picUrl == null || picUrl.isEmpty) {
+                  print('⚠️ No profile picture URL available');
+                }
+                
                 return UserAccountsDrawerHeader(
                   accountName: Text(displayName),
                   accountEmail: Text(email),
