@@ -32,11 +32,12 @@ import 'config/app_config.dart';
 import 'screens/nlp_search_screen.dart';
 import 'screens/compatibility_screen.dart';
 import 'screens/inventory_optimization_screen.dart';
-import 'screens/part_detail_screen.dart';
 import 'screens/comparison_screen.dart';
 import 'screens/inventory_details_screen.dart';
 import 'screens/high_demand_parts_screen.dart';
 import 'screens/seasonal_demand_machines_screen.dart';
+import 'screens/alternative_parts_screen.dart';
+import 'screens/part_search_result_screen.dart';
 import 'screens/lifecycle_prediction_screen.dart';
 import 'screens/accepted_orders_screen.dart';
 import 'screens/my_payments_screen.dart';
@@ -192,7 +193,8 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
         '/settings': (context) => const SettingsScreen(),
 
         '/nlp-search': (context) => NlpSearchScreen(),
-        '/part-detail': (context) => PartDetailScreen(),
+        '/part-search-result': (context) => PartSearchResultScreen(),
+        '/alternative-parts': (context) => AlternativePartsScreen(),
         '/comparison': (context) => ComparisonScreen(),
         '/compatibility': (context) => CompatibilityScreen(),
         '/inventory-optimization': (context) => InventoryOptimizationScreen(),
@@ -224,3 +226,4 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
     );
   }
 }
+

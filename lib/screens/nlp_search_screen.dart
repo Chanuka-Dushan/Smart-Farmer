@@ -6,7 +6,10 @@ class NlpSearchScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("NLP Spare Part Search")),
+      appBar: AppBar(
+        title: const Text("Smart Spare Part Search"),
+        backgroundColor: const Color(0xFF2E7D32),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -21,11 +24,18 @@ class NlpSearchScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+
             Expanded(
               child: ListView(
                 children: [
-                  _resultCard(context, "Plough Blade", "Kubota", "96%"),
-                  _resultCard(context, "Oil Filter", "Mahindra", "91%"),
+                  _resultCard(context,
+                      part: "Plough Blade",
+                      brand: "Kubota",
+                      score: "96%"),
+                  _resultCard(context,
+                      part: "Oil Filter",
+                      brand: "Mahindra",
+                      score: "91%"),
                 ],
               ),
             ),
@@ -35,15 +45,22 @@ class NlpSearchScreen extends StatelessWidget {
     );
   }
 
-  Widget _resultCard(
-      BuildContext context, String part, String brand, String score) {
+  Widget _resultCard(BuildContext context,
+      {required String part,
+      required String brand,
+      required String score}) {
     return Card(
       child: ListTile(
+        leading: const Icon(Icons.build, color: Color(0xFF2E7D32)),
         title: Text(part),
         subtitle: Text("Brand: $brand | Match: $score"),
-        trailing: const Icon(Icons.arrow_forward),
+        trailing: const Icon(Icons.arrow_forward_ios),
         onTap: () {
-          Navigator.pushNamed(context, '/part-detail');
+          Navigator.pushNamed(
+            context,
+            '/part-search-result',
+            arguments: part,
+          );
         },
       ),
     );
