@@ -19,6 +19,31 @@ class AlternativePartsScreen extends StatelessWidget {
     return Colors.blue.shade100;
   }
 
+  // ===============================
+  // RULE 1: Score Threshold
+  // ===============================
+  bool isScoreAcceptable(double score) {
+    return score >= 50; // ❗ Only show >= 50%
+  }
+
+  // ===============================
+  // RULE 2: Name Similarity (Partial Match)
+  // ===============================
+  bool isNameSimilar(String baseName, String altName) {
+    final baseWords =
+        baseName.toLowerCase().split(" ").where((w) => w.length > 2).toList();
+
+    final altLower = altName.toLowerCase();
+
+    // At least ONE meaningful word should match
+    for (final word in baseWords) {
+      if (altLower.contains(word)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final args =
@@ -70,13 +95,30 @@ class AlternativePartsScreen extends StatelessWidget {
                   }
 
                   final data = snapshot.data!;
-                  final List alternatives = data["recommendations"];
+                  final List allAlternatives = data["recommendations"];
                   final int baseId = data["base_part"]["id"];
+                  final String baseName = data["base_part"]["name"];
 
-                  // No results
-                  if (alternatives.isEmpty) {
+                  // ===============================
+                  // APPLY FRONTEND FILTERS
+                  // ===============================
+                  final List filteredAlternatives =
+                      allAlternatives.where((part) {
+                    final double score =
+                        (part["final_score"] as num).toDouble();
+                    final String altName = part["name"];
+
+                    return isScoreAcceptable(score) &&
+                        isNameSimilar(baseName, altName);
+                  }).toList();
+
+                  // No results after filtering
+                  if (filteredAlternatives.isEmpty) {
                     return const Center(
-                      child: Text("No compatible alternatives found"),
+                      child: Text(
+                        "No suitable alternatives found\n(score > 50%)",
+                        textAlign: TextAlign.center,
+                      ),
                     );
                   }
 
@@ -84,9 +126,9 @@ class AlternativePartsScreen extends StatelessWidget {
                   // List of Alternative Parts
                   // ===============================
                   return ListView.builder(
-                    itemCount: alternatives.length,
+                    itemCount: filteredAlternatives.length,
                     itemBuilder: (context, index) {
-                      final part = alternatives[index];
+                      final part = filteredAlternatives[index];
                       final double score =
                           (part["final_score"] as num).toDouble();
 

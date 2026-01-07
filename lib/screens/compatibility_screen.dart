@@ -11,13 +11,68 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
   final TextEditingController _partController = TextEditingController();
   final TextEditingController _brandController = TextEditingController();
 
+  bool _loading = false;
+
   final List<String> brands = [
     "TAFE 45 DI",
     "TAFE 7250",
     "MF 240",
-    "Kubota 4508",
-    "Mahindra 575 DI",
   ];
+
+  /// TEMP PART MAP (PP1)
+  /// key = "partName|brand"
+  final Map<String, int> partIdMap = {
+  // ---------- TAFE 45 DI ----------
+  "oil filter|tafe 45 di": 1,
+  "fuel filter|tafe 45 di": 2,
+  "air filter|tafe 45 di": 3,
+  "head gasket|tafe 45 di": 4,
+  "crank oil seal (rear)|tafe 45 di": 5,
+  "front hub bearing inner|tafe 45 di": 6,
+  "front hub bearing outer|tafe 45 di": 7,
+  "pinion pilot racer|tafe 45 di": 8,
+  "front axle|tafe 45 di": 9,
+  "front center beam|tafe 45 di": 10,
+  "center pin bush|tafe 45 di": 11,
+  "king pin bush|tafe 45 di": 12,
+  "crown wheel pinion assy|tafe 45 di": 13,
+  "reverse gear wheel|tafe 45 di": 14,
+  "top cover|tafe 45 di": 15,
+  "hydraulic control valve|tafe 45 di": 16,
+  "hydraulic safety valve|tafe 45 di": 17,
+  "hydraulic pump o-ring kit|tafe 45 di": 18,
+  "lift arm|tafe 45 di": 19,
+  "bell cam|tafe 45 di": 20,
+  "lift shaft|tafe 45 di": 21,
+
+  // ---------- TAFE 7250 ----------
+  "oil filter|tafe 7250": 22,
+  "fuel filter|tafe 7250": 23,
+  "front hub bearing inner|tafe 7250": 24,
+  "front hub bearing outer|tafe 7250": 25,
+
+  // ---------- MF 240 ----------
+  "oil filter|mf 240": 26,
+  "fuel filter|mf 240": 27,
+  "front hub bearing inner|mf 240": 28,
+  "front hub grease seal|mf 240": 29,
+  "crank oil seal (rear)|mf 240": 30,
+  "crown wheel & pinion|mf 240": 31,
+  "reverse gear|mf 240": 32,
+  "front axle|mf 240": 34,
+  "front center beam|mf 240": 35,
+  "center pin bush|mf 240": 36,
+  "king pin bush|mf 240": 37,
+  "hydraulic control valve|mf 240": 38,
+  "hydraulic safety valve|mf 240": 39,
+  "hydraulic pump o-ring kit|mf 240": 40,
+  "pinion pilot racer|mf 240": 41,
+  "top cover|mf 240": 42,
+  "lift arm|mf 240": 43,
+  "bell cam|mf 240": 44,
+  "lift shaft|mf 240": 45,
+};
+
 
   @override
   void dispose() {
@@ -26,25 +81,45 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
     super.dispose();
   }
 
+  // ==========================================================
+  // 🔍 TEMP FIND ALTERNATIVES
+  // ==========================================================
   void _findAlternatives() {
-    if (_partController.text.trim().isEmpty) {
+    final partName = _partController.text.trim().toLowerCase();
+    final brand = _brandController.text.trim().toLowerCase();
+
+    if (partName.isEmpty || brand.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a part name")),
+        const SnackBar(content: Text("Enter part name and brand")),
       );
       return;
     }
+
+    final key = "$partName|$brand";
+
+    if (!partIdMap.containsKey(key)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Part not found (PP1 demo set)")),
+      );
+      return;
+    }
+
+    final int partId = partIdMap[key]!;
 
     Navigator.pushNamed(
       context,
       '/alternative-parts',
       arguments: {
+        "partId": partId,
         "partName": _partController.text.trim(),
         "brand": _brandController.text.trim(),
-        "partId": 1, // 🔹 TEMP for PP1 demo
       },
     );
   }
 
+  // ==========================================================
+  // UI
+  // ==========================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,14 +130,11 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ===============================
-          // Part Name Input
-          // ===============================
           TextField(
             controller: _partController,
             decoration: const InputDecoration(
               labelText: "Spare Part Name",
-              hintText: "e.g. Oil Filter, Plough Blade",
+              hintText: "e.g. Fuel Filter",
               prefixIcon: Icon(Icons.build),
               border: OutlineInputBorder(),
             ),
@@ -70,80 +142,45 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
 
           const SizedBox(height: 16),
 
-          // ===============================
-          // Brand Input (Dropdown + Typing)
-          // ===============================
           Autocomplete<String>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return brands;
-              }
+            optionsBuilder: (value) {
+              if (value.text.isEmpty) return brands;
               return brands.where(
-                (b) => b
-                    .toLowerCase()
-                    .contains(textEditingValue.text.toLowerCase()),
+                (b) => b.toLowerCase().contains(value.text.toLowerCase()),
               );
             },
-            onSelected: (String selection) {
+            onSelected: (selection) {
               _brandController.text = selection;
             },
-            fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+            fieldViewBuilder: (context, controller, focusNode, _) {
               controller.text = _brandController.text;
               return TextField(
                 controller: controller,
                 focusNode: focusNode,
                 decoration: const InputDecoration(
                   labelText: "Machine / Brand",
-                  hintText: "Select or type brand",
                   prefixIcon: Icon(Icons.agriculture),
                   border: OutlineInputBorder(),
                 ),
-                onChanged: (value) {
-                  _brandController.text = value;
-                },
+                onChanged: (v) => _brandController.text = v,
               );
             },
           ),
 
           const SizedBox(height: 24),
 
-          // ===============================
-          // CTA Button
-          // ===============================
           SizedBox(
             height: 48,
-            child: ElevatedButton.icon(
+            child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2E7D32),
               ),
-              icon: const Icon(Icons.search, color: Colors.white),
-              label: const Text(
+              onPressed: _findAlternatives,
+              child: const Text(
                 "Find Alternative Parts",
                 style: TextStyle(color: Colors.white),
               ),
-              onPressed: _findAlternatives,
             ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // ===============================
-          // Bottom Illustration Image
-          // ===============================
-          Column(
-            children: [
-              Image.asset(
-                "assets/images/compatibility.jpg",
-                height: 180,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                "Smart compatibility matching for agricultural spare parts",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
           ),
         ],
       ),
