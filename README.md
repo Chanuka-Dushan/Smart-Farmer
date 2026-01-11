@@ -5,6 +5,7 @@ A comprehensive Flutter-based mobile application for managing agricultural machi
 ## 📋 Table of Contents
 
 - [Features](#features)
+- [System Architecture Diagram](#system-architecture-diagram)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Project Structure](#project-structure)
@@ -48,6 +49,10 @@ A comprehensive Flutter-based mobile application for managing agricultural machi
 - Seasonal demand insights
 - Lifecycle prediction for parts
 - Inventory optimization recommendations
+
+## System Architecture Diagram
+<img width="1677" height="803" alt="image" src="https://github.com/user-attachments/assets/a707087c-d4a2-454f-8fc5-6a6f2ace741f" />
+
 
 ## 📦 Prerequisites
 
