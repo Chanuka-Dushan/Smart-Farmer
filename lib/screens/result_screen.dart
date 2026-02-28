@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import '3D_viewer_screen.dart';
+import 'part_details_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
   final File? uploadedImage;
@@ -14,6 +16,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   String _selectedCategory = 'All';
+  late Set<String> _favorites = {}; // Track favorite parts
 
   // Mock data for similar spare parts
   final List<Map<String, dynamic>> _spareParts = [
@@ -88,11 +91,44 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   }
 
   void _navigateTo3DView(Map<String, dynamic> part) {
-    Navigator.pushNamed(
+    Navigator.push(
       context,
-      '/3d-view',
-      arguments: part,
+      MaterialPageRoute(
+        builder: (_) => Model3DViewerScreen(sparePart: part),
+      ),
     );
+  }
+
+  void _navigateToPartDetails(Map<String, dynamic> part) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PartDetailsScreen(sparePart: part, uploadedImage: widget.uploadedImage),
+      ),
+    );
+  }
+
+  void _toggleFavorite(Map<String, dynamic> part) {
+    setState(() {
+      final partId = part['partNumber'];
+      if (_favorites.contains(partId)) {
+        _favorites.remove(partId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Removed from favorites'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        _favorites.add(partId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Added to favorites'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -319,12 +355,20 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                         color: Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Center(
-                        child: Icon(
-                          Icons.settings,
-                          size: 50,
-                          color: Colors.grey.shade400,
-                        ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: widget.uploadedImage != null
+                            ? Image.file(
+                                widget.uploadedImage!,
+                                fit: BoxFit.cover,
+                              )
+                            : Center(
+                                child: Icon(
+                                  Icons.settings,
+                                  size: 50,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -332,27 +376,50 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  part['name'],
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                part['name'],
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _getSimilarityColor(part['similarity']),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                _favorites.contains(part['partNumber']) ? Icons.favorite : Icons.favorite_border,
+                                color: _favorites.contains(part['partNumber']) ? Colors.red : Colors.grey,
+                                size: 24,
+                              ),
+                              onPressed: () => _toggleFavorite(part),
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(8),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Part #: ${part['partNumber']}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getSimilarityColor(part['similarity']),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -376,14 +443,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            'Part #: ${part['partNumber']}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+
                           Row(
                             children: [
                               Text(
@@ -449,7 +509,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _navigateToPartDetails(part),
                       icon: const Icon(Icons.info_outline, size: 18),
                       label: const Text('Details'),
                       style: OutlinedButton.styleFrom(
