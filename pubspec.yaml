@@ -57,6 +57,9 @@ dependencies:
   path_provider: ^2.1.1  # For file system access
   share_plus: ^7.2.1  # For sharing PDF files
   intl: ^0.19.0  # For date formatting
+  video_player: ^2.8.1  # For video playback in 3D viewer
+  chewie: ^1.7.4  # Better video player controls
+  http_parser: ^4.0.0  # For multipart content type parsing
 
 dev_dependencies:
   flutter_test:

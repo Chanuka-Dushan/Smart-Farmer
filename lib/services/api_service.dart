@@ -1038,6 +1038,49 @@ class ApiService {
     }
   }
 
+  /// Identify a spare part using the remote ML endpoint
+  Future<Map<String, dynamic>> identifyPart(String imagePath) async {
+    try {
+      print('🔍 Identifying part with image at: $imagePath');
+
+      final uri = Uri.parse('$baseUrl/api/identify-part');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header if available
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Ensure file exists before adding
+      final imageFile = File(imagePath);
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist: $imagePath');
+      }
+
+      request.files.add(await http.MultipartFile.fromPath('image', imagePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Part identification succeeded');
+        // log full response for debugging
+        print('✅ identifyPart response: $result');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('❌ identifyPart API error: $e');
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to identify part', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
   /// Delete user account
   Future<void> deleteAccount() async {
     try {

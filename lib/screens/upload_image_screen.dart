@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../services/api_service.dart';
 import 'result_screen.dart';
 
 class UploadImageScreen extends StatefulWidget {
@@ -65,20 +66,58 @@ class _UploadImageScreenState extends State<UploadImageScreen> with SingleTicker
       _isProcessing = true;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // call service to identify part
+      final api = ApiService();
+      final result = await api.identifyPart(_selectedImage!.path);
+      // log response for visibility
+      debugPrint('identifyPart API returned: $result');
 
-    setState(() {
-      _isProcessing = false;
-    });
+      final label = result['label']?.toString() ?? 'Unknown';
+      final confidence = (result['confidence'] is num)
+          ? (result['confidence'] as num).toDouble()
+          : 0.0;
 
-    // Navigate to results page with uploaded image
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ResultsScreen(uploadedImage: _selectedImage),
-      ),
-    );
+      // Derive top prediction from highest confidence in predictions list
+      final predictions = result['predictions'] as List<dynamic>?;
+      String? topPrediction;
+      double? topConfidence;
+      if (predictions != null && predictions.isNotEmpty) {
+        Map<String, dynamic>? best;
+        double bestConf = -1;
+        for (final p in predictions) {
+          final c = (p['confidence'] is num) ? (p['confidence'] as num).toDouble() : 0.0;
+          if (c > bestConf) {
+            bestConf = c;
+            best = p as Map<String, dynamic>;
+          }
+        }
+        if (best != null) {
+          topPrediction = best['name']?.toString();
+          topConfidence = bestConf;
+        }
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResultsScreen(
+            uploadedImage: _selectedImage,
+            identifiedLabel: label,
+            confidence: confidence,
+            predictions: predictions,
+            topPrediction: topPrediction,
+            topConfidence: topConfidence,
+          ),
+        ),
+      );
+    } catch (e) {
+      _showErrorSnackBar('Identification failed. ${e.toString()}');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
 
   void _showErrorSnackBar(String message) {
