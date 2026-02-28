@@ -83,35 +83,11 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
     },
   ];
 
-  // Mock data for suppliers
-  final List<Map<String, dynamic>> _suppliers = [
-    {
-      'name': 'AgriParts Direct',
-      'price': '\$45.99',
-      'rating': 4.8,
-      'delivery': '2-3 days',
-      'stock': 'In Stock',
-    },
-    {
-      'name': 'Farm Equipment Store',
-      'price': '\$48.50',
-      'rating': 4.5,
-      'delivery': '3-5 days',
-      'stock': 'In Stock',
-    },
-    {
-      'name': 'Tractor Parts Plus',
-      'price': '\$52.99',
-      'rating': 4.9,
-      'delivery': '1-2 days',
-      'stock': 'Low Stock',
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -377,7 +353,6 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
                       Tab(text: 'Overview'),
                       Tab(text: 'Specs'),
                       Tab(text: 'Reviews'),
-                      Tab(text: 'Suppliers'),
                     ],
                   ),
                 ),
@@ -389,8 +364,7 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
                     children: [
                       _buildOverviewTab(),
                       _buildSpecsTab(),
-                      _buildReviewsTab(),
-                      _buildSuppliersTab(),
+                      _buildReviewsTab()
                     ],
                   ),
                 ),
@@ -399,7 +373,6 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
@@ -427,28 +400,6 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Key Features',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildFeatureItem('Superior filtration efficiency'),
-          _buildFeatureItem('Extended service life'),
-          _buildFeatureItem('Easy installation'),
-          _buildFeatureItem('OEM quality standards'),
-          _buildFeatureItem('Compatible with synthetic oils'),
-          const SizedBox(height: 20),
-          const Text(
-            'Compatibility',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
           ...((widget.sparePart['compatibility'] as List?) ?? []).map(
             (model) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -619,163 +570,6 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSuppliersTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _suppliers.length,
-      itemBuilder: (context, index) {
-        final supplier = _suppliers[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      supplier['name'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          supplier['rating'].toString(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Price',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        Text(
-                          supplier['price'],
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Delivery',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        Text(
-                          supplier['delivery'],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade700,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 45),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Buy from this supplier'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.shopping_cart_outlined),
-                label: const Text('Add to Cart'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.green.shade700,
-                  side: BorderSide(color: Colors.green.shade700, width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.shopping_bag),
-                label: const Text('Buy Now'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
