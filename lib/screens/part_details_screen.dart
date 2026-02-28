@@ -22,6 +22,42 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
   int _selectedImageIndex = 0;
   bool _isFavorite = false;
 
+  Widget _buildPartImage(String? imagePath) {
+    if (imagePath != null && imagePath.startsWith('http')) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Center(
+            child: Icon(Icons.broken_image, size: 80, color: Colors.grey.shade400),
+          );
+        },
+      );
+    } else if (imagePath != null && imagePath.isNotEmpty) {
+      return Image.asset(imagePath, fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Center(
+            child: Icon(Icons.settings, size: 80, color: Colors.grey.shade400),
+          );
+        },
+      );
+    }
+    return Center(
+      child: Icon(Icons.settings, size: 100, color: Colors.grey.shade400),
+    );
+  }
+
   // Mock data for reviews
   final List<Map<String, dynamic>> _reviews = [
     {
@@ -137,18 +173,7 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
                       itemBuilder: (context, index) {
                         return Container(
                           color: Colors.white,
-                          child: widget.uploadedImage != null
-                              ? Image.file(
-                                  widget.uploadedImage!,
-                                  fit: BoxFit.contain,
-                                )
-                              : Center(
-                                  child: Icon(
-                                    Icons.settings,
-                                    size: 100,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
+                          child: _buildPartImage(widget.sparePart['image']?.toString()),
                         );
                       },
                     ),
@@ -249,11 +274,11 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Price Section
-                      Row(
+                      // Price Section replaced by Confidence
+                      if (widget.sparePart['confidence'] != null) ...[Row(
                         children: [
                           Text(
-                            widget.sparePart['price'] ?? '\$45.99',
+                            '${(widget.sparePart['confidence'] is double ? widget.sparePart['confidence'].toStringAsFixed(1) : widget.sparePart['confidence'].toString())}%',
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
@@ -270,17 +295,17 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
                               color: Colors.green.shade50,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(
-                              widget.sparePart['availability'] ?? 'In Stock',
+                            child: const Text(
+                              'Confidence',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.green.shade700,
+                                color: Colors.green,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ],
-                      ),
+                      )],
                       const SizedBox(height: 20),
                       // Quantity Selector
                       Row(
@@ -393,7 +418,8 @@ class _PartDetailsScreenState extends State<PartDetailsScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            'High-quality engine oil filter designed for optimal performance. Features advanced filtration technology to protect your engine from contaminants and ensure long-lasting operation.',
+            widget.sparePart['description']?.toString() ??
+                'High-quality spare part designed for optimal performance.',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade700,

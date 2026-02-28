@@ -5,8 +5,21 @@ import 'part_details_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
   final File? uploadedImage;
+  final String? identifiedLabel;
+  final double? confidence;
+  final List<dynamic>? predictions;
+  final String? topPrediction;
+  final double? topConfidence;
 
-  const ResultsScreen({Key? key, this.uploadedImage}) : super(key: key);
+  const ResultsScreen({
+    Key? key,
+    this.uploadedImage,
+    this.identifiedLabel,
+    this.confidence,
+    this.predictions,
+    this.topPrediction,
+    this.topConfidence,
+  }) : super(key: key);
 
   @override
   State<ResultsScreen> createState() => _ResultsScreenState();
@@ -18,49 +31,8 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   String _selectedCategory = 'All';
   late Set<String> _favorites = {}; // Track favorite parts
 
-  // Mock data for similar spare parts
-  final List<Map<String, dynamic>> _spareParts = [
-    {
-      'name': 'Engine Oil Filter',
-      'partNumber': 'EF-2024-A',
-      'compatibility': ['Tractor Model X100', 'Harvester H200'],
-      'price': '\$45.99',
-      'availability': 'In Stock',
-      'similarity': 98,
-      'image': 'assets/spare1.jpg',
-      'category': 'Engine'
-    },
-    {
-      'name': 'Oil Filter Premium',
-      'partNumber': 'EF-2024-B',
-      'compatibility': ['Tractor Model X100', 'Plough P150'],
-      'price': '\$52.99',
-      'availability': 'In Stock',
-      'similarity': 95,
-      'image': 'assets/spare2.jpg',
-      'category': 'Engine'
-    },
-    {
-      'name': 'Universal Oil Filter',
-      'partNumber': 'EF-2023-C',
-      'compatibility': ['Multiple Models'],
-      'price': '\$39.99',
-      'availability': 'Low Stock',
-      'similarity': 89,
-      'image': 'assets/spare3.jpg',
-      'category': 'Engine'
-    },
-    {
-      'name': 'Heavy Duty Filter',
-      'partNumber': 'EF-2024-D',
-      'compatibility': ['Industrial Equipment'],
-      'price': '\$67.99',
-      'availability': 'In Stock',
-      'similarity': 85,
-      'image': 'assets/spare4.jpg',
-      'category': 'Engine'
-    },
-  ];
+  // Parts list populated from model predictions (fallback to mock data)
+  late List<Map<String, dynamic>> _spareParts = [];
 
   @override
   void initState() {
@@ -77,6 +49,57 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       curve: Curves.easeOut,
     ));
     _animationController.forward();
+    // Build spare parts list from predictions if provided
+    if (widget.predictions != null && widget.predictions!.isNotEmpty) {
+      _spareParts = widget.predictions!.asMap().entries.map((entry) {
+        final i = entry.key;
+        final p = entry.value as Map<String, dynamic>;
+
+        return {
+          'name': p['name']?.toString() ?? 'Unknown',
+          'partNumber': p['partNumber']?.toString() ?? 'UNKNOWN',
+          'compatibility': (p['compatibility'] is List) ? List<String>.from(p['compatibility']) : ['Unknown'],
+          'confidence': (p['confidence'] is num) ? (p['confidence'] as num).toDouble() : 0.0,
+          'image': p['image']?.toString() ?? 'assets/spare1.jpg',
+          'description': p['description']?.toString() ?? '',
+          'model3dVideo': p['model3dVideo']?.toString() ?? '',
+          'category': 'Engine', // keep hardcoded for now
+        };
+      }).toList();
+
+      // Ensure topPrediction is first in the list
+      if (widget.topPrediction != null) {
+        final topIdx = _spareParts.indexWhere((p) => p['name'] == widget.topPrediction);
+        if (topIdx > 0) {
+          final top = _spareParts.removeAt(topIdx);
+          _spareParts.insert(0, top);
+        }
+      }
+    } else {
+      // Fallback mock items
+      _spareParts = [
+        {
+          'name': 'Engine Oil Filter',
+          'partNumber': 'EF-2024-A',
+          'compatibility': ['Tractor Model X100', 'Harvester H200'],
+          'price': '\$45.99',
+          'availability': 'In Stock',
+          'confidence': 98,
+          'image': 'assets/spare1.jpg',
+          'category': 'Engine'
+        },
+        {
+          'name': 'Oil Filter Premium',
+          'partNumber': 'EF-2024-B',
+          'compatibility': ['Tractor Model X100', 'Plough P150'],
+          'price': '\$52.99',
+          'availability': 'In Stock',
+          'confidence': 95,
+          'image': 'assets/spare2.jpg',
+          'category': 'Engine'
+        },
+      ];
+    }
   }
 
   @override
@@ -226,6 +249,45 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                   ),
                                 ],
                               ),
+                              // Show top prediction if available
+                              if (widget.topPrediction != null) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Top: ${widget.topPrediction}',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey.shade900,
+                                        ),
+                                      ),
+                                    ),
+                                    if (widget.topConfidence != null)
+                                      Text(
+                                        '${widget.topConfidence!.toStringAsFixed(1)}%',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.green.shade700,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ] else if (widget.identifiedLabel != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Label: ${widget.identifiedLabel}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ],
+
+                              // Predictions are shown in the main list below; removed compact header list
                               const SizedBox(height: 8),
                               Text(
                                 '${_spareParts.length} similar parts found',
@@ -357,18 +419,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: widget.uploadedImage != null
-                            ? Image.file(
-                                widget.uploadedImage!,
-                                fit: BoxFit.cover,
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.settings,
-                                  size: 50,
-                                  color: Colors.grey.shade400,
-                                ),
-                              ),
+                        child: _buildPartImage(part['image']),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -401,8 +452,8 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Part #: ${part['partNumber']}',
@@ -411,74 +462,55 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                 color: Colors.grey.shade600,
                               ),
                             ),
+                            if (part['description'] != null && part['description'].toString().isNotEmpty) ...[const SizedBox(height: 4),
+                              Text(
+                                part['description'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: _getSimilarityColor(part['similarity']),
+                                color: _getConfidenceColor(part['confidence']),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.check_circle,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${part['similarity']}%',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          Row(
-                            children: [
-                              Text(
-                                part['price'],
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade700,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: part['availability'] == 'In Stock'
-                                      ? Colors.green.shade50
-                                      : Colors.orange.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  part['availability'],
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: part['availability'] == 'In Stock'
-                                        ? Colors.green.shade700
-                                        : Colors.orange.shade700,
-                                    fontWeight: FontWeight.w600,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle,
+                                    size: 14,
+                                    color: Colors.white,
                                   ),
-                                ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${(part['confidence'] is double ? part['confidence'].toStringAsFixed(1) : part['confidence'].toString())}%',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        ),
                         ],
                       ),
                     ),
@@ -544,9 +576,46 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     );
   }
 
-  Color _getSimilarityColor(int similarity) {
-    if (similarity >= 95) return Colors.green.shade600;
-    if (similarity >= 85) return Colors.blue.shade600;
+  /// Renders a part image from either a URL or an asset path.
+  Widget _buildPartImage(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) {
+      return Center(
+        child: Icon(Icons.settings, size: 50, color: Colors.grey.shade400),
+      );
+    }
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Center(child: CircularProgressIndicator(strokeWidth: 2));
+        },
+        errorBuilder: (context, error, stackTrace) => Center(
+          child: Icon(Icons.broken_image, size: 50, color: Colors.grey.shade400),
+        ),
+      );
+    }
+    return Image.asset(
+      imagePath,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Center(
+        child: Icon(Icons.settings, size: 50, color: Colors.grey.shade400),
+      ),
+    );
+  }
+
+  Color _getConfidenceColor(dynamic confidence) {
+    double value;
+    if (confidence is int) {
+      value = confidence.toDouble();
+    } else if (confidence is double) {
+      value = confidence;
+    } else {
+      value = 0.0;
+    }
+    if (value >= 85) return Colors.green.shade600;
+    if (value >= 70) return Colors.blue.shade600;
     return Colors.orange.shade600;
   }
 }
