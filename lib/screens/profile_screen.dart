@@ -5,6 +5,233 @@ import 'package:geolocator/geolocator.dart';
 import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
 
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+class _AppColors {
+  static const forest      = Color(0xFF1B4332);
+  static const leaf        = Color(0xFF2D6A4F);
+  static const sage        = Color(0xFF52B788);
+  static const mint        = Color(0xFFB7E4C7);
+  static const cream       = Color(0xFFF8F5F0);
+  static const sand        = Color(0xFFEDE8DF);
+  static const bark        = Color(0xFF8B6F47);
+  static const charcoal    = Color(0xFF2C2C2C);
+  static const slate       = Color(0xFF6B7280);
+  static const error       = Color(0xFFDC2626);
+  static const errorLight  = Color(0xFFFEF2F2);
+  static const successBg   = Color(0xFFECFDF5);
+}
+
+// ─── Reusable Widgets ─────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, this.icon});
+  final String label;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _AppColors.forest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+              color: _AppColors.forest,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_AppColors.sage.withOpacity(0.4), Colors.transparent],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StyledField extends StatelessWidget {
+  const _StyledField({
+    required this.controller,
+    required this.label,
+    this.hint,
+    this.icon,
+    this.keyboardType,
+    this.maxLines = 1,
+    this.validator,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String? hint;
+  final IconData? icon;
+  final TextInputType? keyboardType;
+  final int maxLines;
+  final String? Function(String?)? validator;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      validator: validator,
+      style: const TextStyle(
+        fontSize: 15,
+        color: _AppColors.charcoal,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(color: _AppColors.slate.withOpacity(0.6), fontSize: 13),
+        labelStyle: const TextStyle(
+          color: _AppColors.slate,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+        floatingLabelStyle: const TextStyle(
+          color: _AppColors.forest,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        prefixIcon: icon != null
+            ? Icon(icon, color: _AppColors.sage, size: 20)
+            : null,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _AppColors.sand, width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _AppColors.sand, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _AppColors.sage, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _AppColors.error, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _AppColors.error, width: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryButton extends StatelessWidget {
+  const _PrimaryButton({required this.label, required this.onPressed, this.icon});
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _AppColors.forest,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: _AppColors.forest.withOpacity(0.4),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OutlineButton extends StatelessWidget {
+  const _OutlineButton({required this.label, required this.onPressed, this.icon});
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _AppColors.forest,
+          side: const BorderSide(color: _AppColors.sage, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -12,73 +239,73 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  
-  // Common fields
+
   late TextEditingController _firstnameController;
   late TextEditingController _lastnameController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
-  
-  // Seller specific
   late TextEditingController _businessNameController;
   late TextEditingController _descriptionController;
   late TextEditingController _locationNameController;
-  
-  // Location state
+
   Position? _currentPosition;
   bool _isLoadingLocation = false;
+
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
 
   @override
   void initState() {
     super.initState();
+
+    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeCtrl.forward();
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     if (authProvider.isSeller) {
       final seller = authProvider.seller;
-      _firstnameController = TextEditingController(text: seller?.ownerFirstname ?? '');
-      _lastnameController = TextEditingController(text: seller?.ownerLastname ?? '');
-      _phoneController = TextEditingController(text: seller?.phoneNumber ?? '');
-      _addressController = TextEditingController(text: seller?.businessAddress ?? '');
+      _firstnameController    = TextEditingController(text: seller?.ownerFirstname ?? '');
+      _lastnameController     = TextEditingController(text: seller?.ownerLastname ?? '');
+      _phoneController        = TextEditingController(text: seller?.phoneNumber ?? '');
+      _addressController      = TextEditingController(text: seller?.businessAddress ?? '');
       _businessNameController = TextEditingController(text: seller?.businessName ?? '');
-      _descriptionController = TextEditingController(text: seller?.businessDescription ?? '');
+      _descriptionController  = TextEditingController(text: seller?.businessDescription ?? '');
       _locationNameController = TextEditingController(text: seller?.shopLocationName ?? '');
-      
-      // Load current location if available
+
       if (seller?.latitude != null && seller?.longitude != null) {
         try {
           _currentPosition = Position(
             latitude: double.parse(seller!.latitude!),
             longitude: double.parse(seller.longitude!),
             timestamp: DateTime.now(),
-            accuracy: 0,
-            altitude: 0,
-            heading: 0,
-            speed: 0,
-            speedAccuracy: 0,
-            altitudeAccuracy: 0,
-            headingAccuracy: 0,
+            accuracy: 0, altitude: 0, heading: 0,
+            speed: 0, speedAccuracy: 0,
+            altitudeAccuracy: 0, headingAccuracy: 0,
           );
-        } catch (e) {
-          // Invalid location data
+        } catch (_) {
           _currentPosition = null;
         }
       }
     } else {
       final user = authProvider.user;
-      _firstnameController = TextEditingController(text: user?.firstname ?? '');
-      _lastnameController = TextEditingController(text: user?.lastname ?? '');
-      _phoneController = TextEditingController(text: user?.phoneNumber ?? '');
-      _addressController = TextEditingController(text: user?.address ?? '');
+      _firstnameController    = TextEditingController(text: user?.firstname ?? '');
+      _lastnameController     = TextEditingController(text: user?.lastname ?? '');
+      _phoneController        = TextEditingController(text: user?.phoneNumber ?? '');
+      _addressController      = TextEditingController(text: user?.address ?? '');
       _businessNameController = TextEditingController();
-      _descriptionController = TextEditingController();
+      _descriptionController  = TextEditingController();
       _locationNameController = TextEditingController();
     }
   }
 
   @override
   void dispose() {
+    _fadeCtrl.dispose();
     _firstnameController.dispose();
     _lastnameController.dispose();
     _phoneController.dispose();
@@ -89,160 +316,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+  // ── Actions ────────────────────────────────────────────────────────────────
 
-    if (image != null) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
-      // Clear image cache for the current profile picture
-      final currentPicUrl = authProvider.isSeller 
-        ? authProvider.seller?.logoUrl 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentPicUrl = authProvider.isSeller
+        ? authProvider.seller?.logoUrl
         : authProvider.user?.profilePictureUrl;
-      if (currentPicUrl != null && currentPicUrl.isNotEmpty) {
-        try {
-          final imageProvider = NetworkImage(currentPicUrl);
-          imageProvider.evict();
-        } catch (e) {
-          // Ignore eviction errors
-        }
-      }
-      
-      final success = await authProvider.uploadProfilePicture(image.path);
-      
-      if (!mounted) return;
-      
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile picture updated successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Force a rebuild of the widget tree
-        setState(() {});
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'Upload failed')),
-        );
-      }
+
+    if (currentPicUrl != null && currentPicUrl.isNotEmpty) {
+      try { NetworkImage(currentPicUrl).evict(); } catch (_) {}
     }
+
+    final success = await authProvider.uploadProfilePicture(image.path);
+    if (!mounted) return;
+
+    _showSnack(
+      success
+          ? context.tr('profile_picture_updated')
+          : (authProvider.errorMessage ?? context.tr('upload_failed')),
+      success: success,
+    );
+    if (success) setState(() {});
   }
 
   Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isLoadingLocation = true;
-    });
+    setState(() => _isLoadingLocation = true);
 
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('location_services_disabled'))),
-        );
-        setState(() {
-          _isLoadingLocation = false;
-        });
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        _showSnack(context.tr('location_services_disabled'));
         return;
       }
-
-      LocationPermission permission = await Geolocator.checkPermission();
+      var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.tr('location_permissions_denied'))),
-          );
-          setState(() {
-            _isLoadingLocation = false;
-          });
+          _showSnack(context.tr('location_permissions_denied'));
           return;
         }
       }
-
       if (permission == LocationPermission.deniedForever) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('location_permissions_permanently_denied'))),
-        );
-        setState(() {
-          _isLoadingLocation = false;
-        });
+        _showSnack(context.tr('location_permissions_permanently_denied'));
         return;
       }
-
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      setState(() {
-        _currentPosition = position;
-        _isLoadingLocation = false;
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('location_updated')),
-          backgroundColor: Colors.green,
-        ),
-      );
+      final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      setState(() => _currentPosition = pos);
+      _showSnack(context.tr('location_updated'), success: true);
     } catch (e) {
-      setState(() {
-        _isLoadingLocation = false;
-      });
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to get location: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnack('Failed to get location: $e', success: false);
+    } finally {
+      if (mounted) setState(() => _isLoadingLocation = false);
     }
   }
 
   Future<void> _updateLocation() async {
     if (_currentPosition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('please_get_location_first'))),
-      );
+      _showSnack(context.tr('please_get_location_first'));
       return;
     }
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.updateSellerLocation(
       latitude: _currentPosition!.latitude.toString(),
       longitude: _currentPosition!.longitude.toString(),
-      shopLocationName: _locationNameController.text.trim().isEmpty 
-          ? null 
+      shopLocationName: _locationNameController.text.trim().isEmpty
+          ? null
           : _locationNameController.text.trim(),
     );
-
     if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('location_updated_successfully')),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? context.tr('location_update_failed')),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    _showSnack(
+      success
+          ? context.tr('location_updated_successfully')
+          : (authProvider.errorMessage ?? context.tr('location_update_failed')),
+      success: success,
+    );
   }
 
   Future<void> _updateProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     bool success;
 
@@ -265,110 +421,155 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.tr('profile_updated')),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? context.l10n.tr('update_failed')),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    _showSnack(
+      success
+          ? context.l10n.tr('profile_updated')
+          : (authProvider.errorMessage ?? context.l10n.tr('update_failed')),
+      success: success,
+    );
   }
 
+  void _showSnack(String message, {bool? success}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              success == true ? Icons.check_circle_outline : Icons.info_outline,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: success == true
+            ? _AppColors.leaf
+            : success == false
+                ? _AppColors.error
+                : _AppColors.charcoal,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // ── Dialogs ────────────────────────────────────────────────────────────────
+
   Future<void> _showChangePasswordDialog() async {
-    final oldPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+    final oldCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final fKey    = GlobalKey<FormState>();
 
     return showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.tr('change_password')),
-        content: Form(
-          key: formKey,
+      builder: (dCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                controller: oldPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: context.tr('old_password'),
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_old_password');
-                  }
-                  return null;
-                },
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _AppColors.mint,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.lock_outline, color: _AppColors.forest, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    context.tr('change_password'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: _AppColors.charcoal,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: newPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: context.tr('new_password'),
-                  border: const OutlineInputBorder(),
+              const SizedBox(height: 24),
+              Form(
+                key: fKey,
+                child: Column(
+                  children: [
+                    _StyledField(
+                      controller: oldCtrl,
+                      label: context.tr('old_password'),
+                      icon: Icons.lock_outline,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? context.tr('please_enter_old_password')
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    _StyledField(
+                      controller: newCtrl,
+                      label: context.tr('new_password'),
+                      icon: Icons.lock_reset_outlined,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return context.tr('please_enter_new_password');
+                        if (v.length < 6) return context.tr('password_too_short');
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_new_password');
-                  }
-                  if (value.length < 6) {
-                    return context.tr('password_too_short');
-                  }
-                  return null;
-                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(dCtx),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _AppColors.slate,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(context.tr('cancel')),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (!fKey.currentState!.validate()) return;
+                        Navigator.pop(dCtx);
+                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        final ok = await auth.changePassword(
+                          oldPassword: oldCtrl.text,
+                          newPassword: newCtrl.text,
+                        );
+                        if (!mounted) return;
+                        _showSnack(
+                          ok
+                              ? context.l10n.tr('password_changed')
+                              : (auth.errorMessage ?? context.l10n.tr('password_change_failed')),
+                          success: ok,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _AppColors.forest,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(context.tr('change')),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(context.tr('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(dialogContext);
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                final success = await authProvider.changePassword(
-                  oldPassword: oldPasswordController.text,
-                  newPassword: newPasswordController.text,
-                );
-
-                if (!mounted) return;
-
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.tr('password_changed')),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(authProvider.errorMessage ?? context.l10n.tr('password_change_failed')),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: Text(context.tr('change')),
-          ),
-        ],
       ),
     );
   }
@@ -376,387 +577,593 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _confirmDeleteAccount() async {
     return showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.tr('delete_account')),
-        content: Text(context.tr('delete_account_confirmation')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(context.tr('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              final success = await authProvider.deleteAccount();
-
-              if (!mounted) return;
-
-              if (success) {
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(authProvider.errorMessage ?? context.l10n.tr('delete_failed')),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text(context.tr('delete')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('profile')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              await authProvider.logout();
-              if (!mounted) return;
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-            },
-          ),
-        ],
-      ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          final isSeller = authProvider.isSeller;
-          final user = authProvider.user;
-          final seller = authProvider.seller;
-
-          if (!isSeller && user == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (isSeller && seller == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final String displayName = isSeller ? seller!.businessName : user!.fullName;
-          final String email = isSeller ? seller!.email : user!.email;
-          final String? picUrl = isSeller ? seller!.logoUrl : user!.profilePictureUrl;
-          final String initials = isSeller 
-            ? (seller!.businessName.isNotEmpty ? seller.businessName.substring(0, 1).toUpperCase() : "S")
-            : ((user!.firstname.isNotEmpty ? user.firstname[0] : "") + (user.lastname.isNotEmpty ? user.lastname[0] : "")).toUpperCase();
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+      builder: (dCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.warning_amber_rounded, color: _AppColors.error, size: 28),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                context.tr('delete_account'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _AppColors.charcoal,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.tr('delete_account_confirmation'),
+                style: const TextStyle(fontSize: 14, color: _AppColors.slate, height: 1.5),
+              ),
+              const SizedBox(height: 24),
+              Row(
                 children: [
-                  // Profile Header
-                  Center(
-                    child: Column(
-                      children: [
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: const Color(0xFF2E7D32),
-                              child: picUrl != null && picUrl.isNotEmpty
-                                ? ClipOval(
-                                    child: Image.network(
-                                      picUrl,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      headers: const {'Cache-Control': 'no-cache'},
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Text(
-                                          initials,
-                                          style: const TextStyle(fontSize: 32, color: Colors.white),
-                                        );
-                                      },
-                                    ),
-                                  )
-                                : Text(
-                                    initials,
-                                    style: const TextStyle(fontSize: 32, color: Colors.white),
-                                  ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: InkWell(
-                                onTap: _pickImage,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [BoxShadow(blurRadius: 5, color: Colors.black26)],
-                                  ),
-                                  child: const Icon(Icons.camera_alt, color: Color(0xFF2E7D32), size: 20),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          displayName,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          email,
-                          style: const TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                        if (picUrl != null)
-                          TextButton(
-                            onPressed: () => authProvider.deleteProfilePicture(),
-                            child: Text(context.tr('remove_picture'), style: const TextStyle(color: Colors.red, fontSize: 12)),
-                          ),
-                      ],
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(dCtx),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _AppColors.slate,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(context.tr('cancel')),
                     ),
                   ),
-                  const SizedBox(height: 32),
-
-                  // Edit Form
-                  if (isSeller) ...[
-                    TextFormField(
-                      controller: _businessNameController,
-                      decoration: InputDecoration(
-                        labelText: context.tr('business_name'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.storefront),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.tr('please_enter_business_name');
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(dCtx);
+                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        final ok = await auth.deleteAccount();
+                        if (!mounted) return;
+                        if (ok) {
+                          Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                        } else {
+                          _showSnack(auth.errorMessage ?? context.l10n.tr('delete_failed'),
+                              success: false);
                         }
-                        return null;
                       },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _firstnameController,
-                          decoration: InputDecoration(
-                            labelText: isSeller ? context.tr('owner_first_name') : context.tr('first_name'),
-                            border: const OutlineInputBorder(),
-                            prefixIcon: const Icon(Icons.person),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return context.tr('please_enter_first_name');
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _lastnameController,
-                          decoration: InputDecoration(
-                            labelText: isSeller ? context.tr('owner_last_name') : context.tr('last_name'),
-                            border: const OutlineInputBorder(),
-                            prefixIcon: const Icon(Icons.person_outline),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return context.tr('please_enter_last_name');
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: context.tr('phone'),
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.phone),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  TextFormField(
-                    controller: _addressController,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      labelText: isSeller ? context.tr('business_address') : context.tr('address'),
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.location_on),
-                    ),
-                  ),
-                  
-                  if (isSeller) ...[
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: context.tr('business_description'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.description),
-                      ),
-                    ),
-                    
-                    // Location Section
-                    const SizedBox(height: 24),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    
-                    Text(
-                      context.tr('shop_location'),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2E7D32),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Current location display
-                    if (_currentPosition != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on, color: Color(0xFF2E7D32)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    context.tr('current_location_coordinates'),
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text('Latitude: ${_currentPosition!.latitude.toStringAsFixed(6)}'),
-                            Text('Longitude: ${_currentPosition!.longitude.toStringAsFixed(6)}'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    
-                    // Location name input
-                    TextFormField(
-                      controller: _locationNameController,
-                      decoration: InputDecoration(
-                        labelText: context.tr('shop_location_name'),
-                        hintText: 'e.g., Downtown Shop, Main Street Store',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.place),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Get Location Button
-                    OutlinedButton.icon(
-                      onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                      icon: _isLoadingLocation 
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.my_location),
-                      label: Text(
-                        _currentPosition == null 
-                            ? context.tr('get_current_location')
-                            : context.tr('update_current_location'),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // Save Location Button
-                    ElevatedButton.icon(
-                      onPressed: _currentPosition == null ? null : _updateLocation,
-                      icon: const Icon(Icons.save_alt),
-                      label: Text(context.tr('save_location')),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32),
+                        backgroundColor: _AppColors.error,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    const Divider(),
-                  ],
-                  
-                  const SizedBox(height: 24),
-
-                  // Update Button
-                  authProvider.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                          onPressed: _updateProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2E7D32),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: Text(context.tr('update_profile')),
-                        ),
-                  const SizedBox(height: 16),
-
-                  // Change Password Button
-                  OutlinedButton.icon(
-                    onPressed: _showChangePasswordDialog,
-                    icon: const Icon(Icons.lock),
-                    label: Text(context.tr('change_password')),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Delete Account Button
-                  TextButton.icon(
-                    onPressed: _confirmDeleteAccount,
-                    icon: const Icon(Icons.delete_forever, color: Colors.red),
-                    label: Text(
-                      context.tr('delete_account'),
-                      style: const TextStyle(color: Colors.red),
+                      child: Text(context.tr('delete')),
                     ),
                   ),
                 ],
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _AppColors.cream,
+      body: Consumer<AuthProvider>(
+        builder: (context, authProvider, _) {
+          final isSeller = authProvider.isSeller;
+          final user   = authProvider.user;
+          final seller = authProvider.seller;
+
+          if ((!isSeller && user == null) || (isSeller && seller == null)) {
+            return const Scaffold(
+              backgroundColor: _AppColors.cream,
+              body: Center(
+                child: CircularProgressIndicator(color: _AppColors.sage),
+              ),
+            );
+          }
+
+          final displayName = isSeller ? seller!.businessName : user!.fullName;
+          final email       = isSeller ? seller!.email : user!.email;
+          final picUrl      = isSeller ? seller!.logoUrl : user!.profilePictureUrl;
+          final initials    = isSeller
+              ? (seller!.businessName.isNotEmpty
+                  ? seller.businessName.substring(0, 1).toUpperCase()
+                  : 'S')
+              : ((user!.firstname.isNotEmpty ? user.firstname[0] : '') +
+                      (user.lastname.isNotEmpty ? user.lastname[0] : ''))
+                  .toUpperCase();
+
+          return CustomScrollView(
+            slivers: [
+              // ── Hero AppBar ──────────────────────────────────────────────
+              SliverAppBar(
+                expandedHeight: 280,
+                pinned: true,
+                backgroundColor: _AppColors.forest,
+                elevation: 0,
+                leading: const SizedBox.shrink(),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.logout_rounded, color: Colors.white, size: 18),
+                      ),
+                      onPressed: () async {
+                        await authProvider.logout();
+                        if (!mounted) return;
+                        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                      },
+                    ),
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Gradient background
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [_AppColors.forest, _AppColors.leaf, _AppColors.sage],
+                          ),
+                        ),
+                      ),
+                      // Decorative circles
+                      Positioned(
+                        top: -40, right: -40,
+                        child: Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.06),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: -20, left: -30,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.05),
+                          ),
+                        ),
+                      ),
+                      // Profile content
+                      SafeArea(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 20),
+                            // Avatar
+                            Stack(
+                              children: [
+                                Container(
+                                  width: 104,
+                                  height: 104,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: _AppColors.mint,
+                                    child: picUrl != null && picUrl.isNotEmpty
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              picUrl,
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                              headers: const {'Cache-Control': 'no-cache'},
+                                              errorBuilder: (_, __, ___) => Text(
+                                                initials,
+                                                style: const TextStyle(
+                                                  fontSize: 34,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: _AppColors.forest,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Text(
+                                            initials,
+                                            style: const TextStyle(
+                                              fontSize: 34,
+                                              fontWeight: FontWeight.w700,
+                                              color: _AppColors.forest,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 2,
+                                  right: 2,
+                                  child: GestureDetector(
+                                    onTap: _pickImage,
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.15),
+                                            blurRadius: 8,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(Icons.camera_alt_rounded,
+                                          color: _AppColors.forest, size: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              displayName,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              email,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white.withOpacity(0.75),
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                            if (picUrl != null && picUrl.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () => authProvider.deleteProfilePicture(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    context.tr('remove_picture'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Form Body ────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Business Info (Seller only) ──────────────────
+                          if (isSeller) ...[
+                            _SectionHeader(
+                              label: context.tr('business_info'),
+                              icon: Icons.storefront_outlined,
+                            ),
+                            _StyledField(
+                              controller: _businessNameController,
+                              label: context.tr('business_name'),
+                              icon: Icons.storefront_outlined,
+                              validator: (v) => (v == null || v.isEmpty)
+                                  ? context.tr('please_enter_business_name')
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            _StyledField(
+                              controller: _descriptionController,
+                              label: context.tr('business_description'),
+                              icon: Icons.description_outlined,
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 28),
+                          ],
+
+                          // ── Personal Info ─────────────────────────────────
+                          _SectionHeader(
+                            label: isSeller
+                                ? context.tr('owner_info')
+                                : context.tr('personal_info'),
+                            icon: Icons.person_outline_rounded,
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _StyledField(
+                                  controller: _firstnameController,
+                                  label: isSeller
+                                      ? context.tr('owner_first_name')
+                                      : context.tr('first_name'),
+                                  icon: Icons.person_outline,
+                                  validator: (v) => (v == null || v.isEmpty)
+                                      ? context.tr('please_enter_first_name')
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _StyledField(
+                                  controller: _lastnameController,
+                                  label: isSeller
+                                      ? context.tr('owner_last_name')
+                                      : context.tr('last_name'),
+                                  icon: Icons.person_outline,
+                                  validator: (v) => (v == null || v.isEmpty)
+                                      ? context.tr('please_enter_last_name')
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _StyledField(
+                            controller: _phoneController,
+                            label: context.tr('phone'),
+                            icon: Icons.phone_outlined,
+                            keyboardType: TextInputType.phone,
+                          ),
+                          const SizedBox(height: 16),
+                          _StyledField(
+                            controller: _addressController,
+                            label: isSeller
+                                ? context.tr('business_address')
+                                : context.tr('address'),
+                            icon: Icons.location_on_outlined,
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: 28),
+
+                          // ── Shop Location (Seller only) ───────────────────
+                          if (isSeller) ...[
+                            _SectionHeader(
+                              label: context.tr('shop_location'),
+                              icon: Icons.map_outlined,
+                            ),
+
+                            if (_currentPosition != null) ...[
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: _AppColors.successBg,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: _AppColors.sage.withOpacity(0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: _AppColors.mint,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.location_on,
+                                          color: _AppColors.forest, size: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          context.tr('current_location_coordinates'),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: _AppColors.forest,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${_currentPosition!.latitude.toStringAsFixed(5)}, '
+                                          '${_currentPosition!.longitude.toStringAsFixed(5)}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: _AppColors.slate,
+                                            fontFeatures: [FontFeature.tabularFigures()],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
+                            _StyledField(
+                              controller: _locationNameController,
+                              label: context.tr('shop_location_name'),
+                              hint: 'e.g. Downtown Shop, Main Street Store',
+                              icon: Icons.place_outlined,
+                            ),
+                            const SizedBox(height: 16),
+
+                            _OutlineButton(
+                              label: _currentPosition == null
+                                  ? context.tr('get_current_location')
+                                  : context.tr('update_current_location'),
+                              icon: _isLoadingLocation ? null : Icons.my_location_outlined,
+                              onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+                            ),
+                            if (_isLoadingLocation) ...[
+                              const SizedBox(height: 12),
+                              const Center(
+                                child: SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: _AppColors.sage,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                            _PrimaryButton(
+                              label: context.tr('save_location'),
+                              icon: Icons.save_alt_outlined,
+                              onPressed: _currentPosition == null ? null : _updateLocation,
+                            ),
+                            const SizedBox(height: 28),
+                          ],
+
+                          // ── Update Profile Button ─────────────────────────
+                          authProvider.isLoading
+                              ? Container(
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: _AppColors.forest,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : _PrimaryButton(
+                                  label: context.tr('update_profile'),
+                                  icon: Icons.check_rounded,
+                                  onPressed: _updateProfile,
+                                ),
+                          const SizedBox(height: 12),
+
+                          // ── Change Password ───────────────────────────────
+                          _OutlineButton(
+                            label: context.tr('change_password'),
+                            icon: Icons.lock_outline_rounded,
+                            onPressed: _showChangePasswordDialog,
+                          ),
+                          const SizedBox(height: 32),
+
+                          // ── Danger Zone ────────────────────────────────────
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: _AppColors.errorLight,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: _AppColors.error.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded,
+                                        color: _AppColors.error, size: 18),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Danger Zone',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _AppColors.error.withOpacity(0.9),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _confirmDeleteAccount,
+                                    icon: const Icon(Icons.delete_forever_rounded,
+                                        color: _AppColors.error, size: 18),
+                                    label: Text(
+                                      context.tr('delete_account'),
+                                      style: const TextStyle(
+                                        color: _AppColors.error,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      side: const BorderSide(
+                                          color: _AppColors.error, width: 1.5),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
