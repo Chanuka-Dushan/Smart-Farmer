@@ -711,7 +711,8 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _apiService.deleteAccount();
+      // Pass isSeller flag to use correct endpoint
+      await _apiService.deleteAccount(isSeller: isSeller);
       _user = null;
       _seller = null;
       _userType = null;
