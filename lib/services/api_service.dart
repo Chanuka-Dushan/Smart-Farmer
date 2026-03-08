@@ -1294,4 +1294,207 @@ class ApiService {
       throw Exception(friendlyMessage);
     }
   }
+
+  // ============================================================================
+  // TYRE HEALTH & DAMAGE DETECTION API METHODS
+  // ============================================================================
+
+  /// Detect tyre damage using YOLOv8 model
+  Future<Map<String, dynamic>> detectTyreDamage({
+    required String imagePath,
+    double confidenceThreshold = 0.25,
+    bool saveAnnotated = true,
+  }) async {
+    try {
+      print('🚗 Starting tyre damage detection...');
+      print('📸 Image path: $imagePath');
+
+      final uri = Uri.parse('$baseUrl/api/tyre/detect-damage');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header if available
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add form fields
+      request.fields['confidence_threshold'] = confidenceThreshold.toString();
+      request.fields['save_annotated'] = saveAnnotated.toString();
+
+      // Check if image file exists
+      final imageFile = File(imagePath);
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist: $imagePath');
+      }
+
+      // Add image file
+      final multipartFile = await http.MultipartFile.fromPath('image', imagePath);
+      request.files.add(multipartFile);
+
+      // Send request
+      print('📤 Sending detection request...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 Response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Damage detection completed');
+        ErrorHandler.logInfo('Tyre damage detection completed');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to detect tyre damage', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Predict tyre remaining life
+  Future<Map<String, dynamic>> predictTyreLife({
+    required String damageType,
+    required String damageSeverity,
+    required double lifespanReduction,
+    required double usageHoursPerWeek,
+    required double monthsUsed,
+    String tyreType = 'default',
+    double confidence = 0.8,
+  }) async {
+    try {
+      print('🔮 Predicting tyre life...');
+
+      final response = await _makeRequest(
+        'POST',
+        '/api/tyre/predict-life',
+        body: {
+          'damage_type': damageType,
+          'damage_severity': damageSeverity,
+          'lifespan_reduction': lifespanReduction,
+          'usage_hours_per_week': usageHoursPerWeek,
+          'months_used': monthsUsed,
+          'tyre_type': tyreType,
+          'confidence': confidence,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Life prediction completed');
+        ErrorHandler.logInfo('Tyre life prediction completed');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to predict tyre life', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Start voice chat session for tyre health
+  Future<Map<String, dynamic>> startTyreVoiceChat({
+    required String damageType,
+    required double confidence,
+    required String severity,
+    required double lifespanReduction,
+    String language = 'si', // Default to Sinhala
+  }) async {
+    try {
+      print('💬 Starting voice chat session...');
+
+      final response = await _makeRequest(
+        'POST',
+        '/api/tyre/voice-chat/start',
+        body: {
+          'damage_type': damageType,
+          'confidence': confidence,
+          'severity': severity,
+          'lifespan_reduction': lifespanReduction,
+          'language': language,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Chat session started: ${result['session_id']}');
+        ErrorHandler.logInfo('Voice chat session started');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to start voice chat', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Continue voice chat conversation
+  Future<Map<String, dynamic>> continueTyreVoiceChat({
+    required String sessionId,
+    required String message,
+  }) async {
+    try {
+      print('💬 Continuing chat: $sessionId');
+
+      final response = await _makeRequest(
+        'POST',
+        '/api/tyre/voice-chat/continue',
+        body: {
+          'session_id': sessionId,
+          'message': message,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Chat response received');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to continue chat', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get chat session summary
+  Future<Map<String, dynamic>> getTyreChatSummary(String sessionId) async {
+    try {
+      print('📊 Getting chat summary: $sessionId');
+
+      final response = await _makeRequest(
+        'GET',
+        '/api/tyre/voice-chat/$sessionId/summary',
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Summary retrieved');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to get chat summary', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+ // ============================================================================
+  // END TYRE HEALTH SYSTEM
+  // ============================================================================
 }

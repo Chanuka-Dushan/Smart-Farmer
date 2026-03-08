@@ -19,6 +19,7 @@ import 'inventory_optimization_screen.dart';
 import 'lifecycle_prediction_screen.dart';
 import 'upload_image_screen.dart';
 import 'favourite_screen.dart';
+import 'tyre_health_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -604,6 +605,21 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => InventoryOptimizationScreen()),
+              );
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Tyre Health Check",
+            subtitle: "AI-powered tyre damage detection",
+            icon: Icons.tire_repair,
+            color: Colors.deepOrange.shade100,
+            iconColor: Colors.deepOrange,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TyreHealthScreen()),
               );
             },
           ),

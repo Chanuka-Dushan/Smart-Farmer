@@ -51,5 +51,9 @@
 	<string>This app needs access to your location to show nearby shops and set your shop location.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs access to your location to show nearby shops and set your shop location.</string>
+	
+	<!-- Microphone Permission for Voice Chat -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to your microphone for voice chat with the tyre health assistant.</string>
 </dict>
 </plist>
