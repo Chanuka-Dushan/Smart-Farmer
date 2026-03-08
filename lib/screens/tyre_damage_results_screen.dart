@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert';
 import '../services/api_service.dart';
 import 'tyre_voice_chat_realtime_screen.dart';
 
@@ -26,6 +27,8 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen> {
     final primaryDamage = widget.detectionResult['primary_damage'] as Map<String, dynamic>?;
     final model = widget.detectionResult['model'] as String? ?? 'Unknown';
     final detectionsCount = widget.detectionResult['detections_count'] as int? ?? 0;
+    final annotatedBase64 = widget.detectionResult['annotated_image_base64'] as String?;
+    final hasAnnotatedImage = annotatedBase64 != null && annotatedBase64.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -33,15 +36,16 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen> {
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: Icon(_showingAnnotated ? Icons.image : Icons.insights),
-            onPressed: () {
-              setState(() {
-                _showingAnnotated = !_showingAnnotated;
-              });
-            },
-            tooltip: _showingAnnotated ? 'Show Original' : 'Show Annotated',
-          ),
+          if (hasAnnotatedImage)
+            IconButton(
+              icon: Icon(_showingAnnotated ? Icons.image : Icons.insights),
+              onPressed: () {
+                setState(() {
+                  _showingAnnotated = !_showingAnnotated;
+                });
+              },
+              tooltip: _showingAnnotated ? 'Show Original' : 'Show Annotated',
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -51,31 +55,39 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen> {
             // Image display
             Stack(
               children: [
-                Image.file(
-                  widget.originalImage,
-                  width: double.infinity,
-                  height: 300,
-                  fit: BoxFit.cover,
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _showingAnnotated ? 'Annotated' : 'Original',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                _showingAnnotated && hasAnnotatedImage
+                    ? Image.memory(
+                        base64Decode(annotatedBase64),
+                        width: double.infinity,
+                        height: 300,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        widget.originalImage,
+                        width: double.infinity,
+                        height: 300,
+                        fit: BoxFit.cover,
+                      ),
+                if (hasAnnotatedImage)
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _showingAnnotated ? 'Annotated' : 'Original',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
 
