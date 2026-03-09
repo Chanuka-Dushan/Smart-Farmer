@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:convert';
 import '../services/api_service.dart';
 import 'tyre_voice_chat_realtime_screen.dart';
+import 'tyre_text_chat_screen.dart';
 
 class TyreDamageResultsScreen extends StatefulWidget {
   final Map<String, dynamic> detectionResult;
@@ -175,30 +176,59 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen> {
                 ),
               ),
 
-              // Next step button
+              // Chat options buttons
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TyreVoiceChatRealtimeScreen(
-                          damageInfo: primaryDamage,
+                child: Column(
+                  children: [
+                    // Voice chat button
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TyreVoiceChatRealtimeScreen(
+                              damageInfo: primaryDamage,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.mic),
+                      label: const Text('හඬ සංවාදය (Voice Chat)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.mic),
-                  label: const Text('Start Voice Chat'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    // Text chat button (fallback)
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TyreTextChatScreen(
+                              damageInfo: primaryDamage,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.chat),
+                      label: const Text('මුකුත කථාවක් (Text Chat)'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF2E7D32),
+                        side: const BorderSide(color: Color(0xFF2E7D32)),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
