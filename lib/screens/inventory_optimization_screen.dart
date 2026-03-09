@@ -1,133 +1,110 @@
 import 'package:flutter/material.dart';
 
 class InventoryOptimizationScreen extends StatelessWidget {
-  const InventoryOptimizationScreen({super.key});
+  InventoryOptimizationScreen({super.key});
+
+  final Color primaryGreen = const Color(0xFF2E7D32);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Inventory Optimization"),
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: primaryGreen,
+        foregroundColor: Colors.white,
       ),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        children: [
-          // -------- Section 1 --------
-          const Text(
-            "High Demand Parts",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Identify most sold spare parts using historical sales data",
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 12),
-
-          TextField(
-            decoration: InputDecoration(
-              hintText: "Enter machine name (e.g. TAFE 45 DI)",
-              prefixIcon: const Icon(Icons.agriculture),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        child: Column(
+          children: [
+            _InventoryMenuCard(
+              title: "Demand Forecast",
+              subtitle:
+                  "Forecast next-month part demand using historical sales and exponential smoothing.",
+              icon: Icons.show_chart,
+              color: primaryGreen,
+              onTap: () {
+                Navigator.pushNamed(context, '/inventory-forecast');
+              },
             ),
-          ),
-          const SizedBox(height: 12),
-
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
+            const SizedBox(height: 16),
+            _InventoryMenuCard(
+              title: "Inventory Recommendations",
+              subtitle:
+                  "View reorder suggestions and compatible substitutes ranked by feedback.",
+              icon: Icons.inventory_2_outlined,
+              color: primaryGreen,
+              onTap: () {
+                Navigator.pushNamed(context, '/inventory-recommendations');
+              },
             ),
-            onPressed: () {
-              Navigator.pushNamed(context, '/high-demand-results');
-            },
-            child: const Text(
-              "Search",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          // -------- Section 2 --------
-          const Text(
-            "Seasonal Demand Forecast",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Predict machine demand based on season and location",
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 12),
-
-          DropdownButtonFormField(
-            decoration: const InputDecoration(
-              labelText: "Month Range",
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              "January - March",
-              "April - June",
-              "July - September",
-              "October - December"
-            ]
-                .map((m) => DropdownMenuItem(
-                      value: m,
-                      child: Text(m),
-                    ))
-                .toList(),
-            onChanged: (_) {},
-          ),
-
-          const SizedBox(height: 10),
-
-          DropdownButtonFormField(
-            decoration: const InputDecoration(
-              labelText: "District",
-              border: OutlineInputBorder(),
-            ),
-            items: _districts
-                .map((d) => DropdownMenuItem(
-                      value: d,
-                      child: Text(d),
-                    ))
-                .toList(),
-            onChanged: (_) {},
-          ),
-
-          const SizedBox(height: 12),
-
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-            ),
-            onPressed: () {
-              Navigator.pushNamed(context, '/seasonal-machines');
-            },
-            child: const Text(
-              "Analyze Demand",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-final List<String> _districts = [
-  "Colombo","Gampaha","Kalutara","Kandy","Matale","Nuwara Eliya",
-  "Galle","Matara","Hambantota","Jaffna","Kilinochchi","Mannar",
-  "Vavuniya","Mullaitivu","Batticaloa","Ampara","Trincomalee",
-  "Kurunegala","Puttalam","Anuradhapura","Polonnaruwa","Badulla",
-  "Monaragala","Ratnapura","Kegalle",
-];
+class _InventoryMenuCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _InventoryMenuCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: color.withOpacity(0.12),
+                child: Icon(icon, color: color),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey[600]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
