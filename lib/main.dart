@@ -26,15 +26,17 @@ import 'providers/auth_provider.dart';
 
 import 'screens/nlp_search_screen.dart';
 import 'screens/compatibility_screen.dart';
-import 'screens/inventory_optimization_screen.dart';
+
 import 'screens/comparison_screen.dart';
-import 'screens/inventory_details_screen.dart';
-import 'screens/high_demand_parts_screen.dart';
-import 'screens/seasonal_demand_machines_screen.dart';
+
 import 'screens/alternative_parts_screen.dart';
 import 'screens/part_search_result_screen.dart';
 import 'screens/lifecycle_prediction_screen.dart';
 import 'screens/feedback_screen.dart';
+
+import 'package:smart_farmer/screens/inventory_optimization_screen.dart';
+import 'package:smart_farmer/screens/inventory_forecast_screen.dart';
+import 'package:smart_farmer/screens/inventory_recommendation_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,11 +107,15 @@ class SmartSparePartApp extends StatelessWidget {
         '/feedback': (context) => const FeedbackScreen(),
 
         // Inventory / prediction routes
-        '/inventory-optimization': (context) => InventoryOptimizationScreen(),
-        '/inventory-details': (context) => InventoryDetailsScreen(),
-        '/high-demand-results': (context) => const HighDemandResultScreen(),
-        '/seasonal-machines': (context) => const SeasonalMachineScreen(),
+        //'/inventory-optimization': (context) => InventoryOptimizationScreen(),
+        //'/inventory-details': (context) => InventoryDetailsScreen(),
+        //'/high-demand-results': (context) => const HighDemandResultScreen(),
+        //'/seasonal-machines': (context) => const SeasonalMachineScreen(),
         '/lifecycle-prediction': (context) => const LifecyclePredictionScreen(),
+
+        '/inventory-optimization': (context) => InventoryOptimizationScreen(),
+        '/inventory-forecast': (context) => InventoryForecastScreen(),
+        '/inventory-recommendations': (context) => InventoryRecommendationScreen(),
 
         // Seller / profile routes
         '/seller-onboarding': (context) => const SellerOnboardingScreen(),

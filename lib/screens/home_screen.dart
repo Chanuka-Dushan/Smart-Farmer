@@ -631,13 +631,8 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.lime.shade100,
               iconColor: Colors.lime.shade800,
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => InventoryOptimizationScreen(),
-                  ),
-                );
-              },
+                Navigator.pushNamed(context, '/inventory-optimization');
+            },
             ),
           ],
         ),
