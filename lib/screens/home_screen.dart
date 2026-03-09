@@ -34,8 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _weatherDescription = "Loading weather...";
   String _locationName = "Detecting location...";
   IconData _weatherIcon = Icons.wb_cloudy_outlined;
-  
-  // Seller stats
+
   int _totalOffers = 0;
   int _activeRequests = 0;
   int _completedDeals = 0;
@@ -53,35 +52,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _checkOnboarding() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (auth.isSeller && auth.seller != null && !auth.seller!.onboardingCompleted) {
+    if (auth.isSeller &&
+        auth.seller != null &&
+        !auth.seller!.onboardingCompleted) {
       Navigator.pushReplacementNamed(context, '/seller-onboarding');
     }
   }
-  
+
   Future<void> _loadSellerStats() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (!auth.isSeller) return;
-    
+
     try {
       final apiService = ApiService();
-      // Fetch seller's offer count
+
       final offersResponse = await apiService.getMyOffers();
       if (offersResponse is List) {
         setState(() {
           _totalOffers = offersResponse.length;
-          _completedDeals = offersResponse.where((o) => o['status'] == 'accepted').length;
+          _completedDeals =
+              offersResponse.where((o) => o['status'] == 'accepted').length;
         });
       }
-      
-      // Fetch active requests count
+
       final requestsResponse = await apiService.getSparePartRequests();
       if (requestsResponse is List) {
         setState(() {
-          _activeRequests = requestsResponse.where((r) => r['status'] == 'active').length;
+          _activeRequests =
+              requestsResponse.where((r) => r['status'] == 'active').length;
         });
       }
     } catch (e) {
-      // Silently fail, keep default values
+      // keep default values
     }
   }
 
@@ -116,40 +118,56 @@ class _HomeScreenState extends State<HomeScreen> {
         desiredAccuracy: LocationAccuracy.low,
       );
 
-      // Explicitly request Celsius to avoid any region-based defaults
-      final weatherResponse = await http.get(Uri.parse(
-          'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true&temperature_unit=celsius'));
+      final weatherResponse = await http.get(
+        Uri.parse(
+          'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true&temperature_unit=celsius',
+        ),
+      );
 
-      // Nominatim requires a User-Agent identifying the app
       final geoResponse = await http.get(
-        Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=10'),
+        Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}&zoom=10',
+        ),
         headers: {'User-Agent': 'SmartFarmerApp/1.0'},
       );
 
       if (weatherResponse.statusCode == 200) {
         final weatherData = json.decode(weatherResponse.body);
         final current = weatherData['current_weather'];
-        
+
         if (current != null) {
           final dynamic tempValue = current['temperature'];
           final int code = current['weathercode'] ?? 0;
 
           String desc;
           IconData icon;
-          if (code == 0) { desc = "Clear Sky"; icon = Icons.wb_sunny_rounded; }
-          else if (code <= 3) { desc = "Cloudy"; icon = Icons.wb_cloudy_rounded; }
-          else if (code <= 67) { desc = "Rainy"; icon = Icons.umbrella_rounded; }
-          else { desc = "Cloudy"; icon = Icons.cloud_rounded; }
+          if (code == 0) {
+            desc = "Clear Sky";
+            icon = Icons.wb_sunny_rounded;
+          } else if (code <= 3) {
+            desc = "Cloudy";
+            icon = Icons.wb_cloudy_rounded;
+          } else if (code <= 67) {
+            desc = "Rainy";
+            icon = Icons.umbrella_rounded;
+          } else {
+            desc = "Cloudy";
+            icon = Icons.cloud_rounded;
+          }
 
           String cityName = "My Farm";
           if (geoResponse.statusCode == 200) {
             final geoData = json.decode(geoResponse.body);
-            cityName = geoData['address']['city'] ?? geoData['address']['town'] ?? geoData['address']['village'] ?? "Nearby";
+            cityName = geoData['address']['city'] ??
+                geoData['address']['town'] ??
+                geoData['address']['village'] ??
+                "Nearby";
           }
 
           if (mounted) {
             setState(() {
-              _weatherTemp = tempValue != null ? "${tempValue.round()}°C" : "--°C";
+              _weatherTemp =
+                  tempValue != null ? "${tempValue.round()}°C" : "--°C";
               _weatherDescription = desc;
               _weatherIcon = icon;
               _locationName = cityName;
@@ -200,32 +218,40 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Consumer<AuthProvider>(
               builder: (context, auth, _) {
-                final String displayName = auth.isSeller ? (auth.seller?.businessName ?? "Store") : (auth.user?.fullName ?? "Farmer");
-                final String email = auth.isSeller ? (auth.seller?.email ?? "") : (auth.user?.email ?? "");
-                final String? picUrl = auth.isSeller ? auth.seller?.logoUrl : auth.user?.profilePictureUrl;
-                
-                // Debug logging
+                final String displayName = auth.isSeller
+                    ? (auth.seller?.businessName ?? "Store")
+                    : (auth.user?.fullName ?? "Farmer");
+                final String email = auth.isSeller
+                    ? (auth.seller?.email ?? "")
+                    : (auth.user?.email ?? "");
+                final String? picUrl =
+                    auth.isSeller ? auth.seller?.logoUrl : auth.user?.profilePictureUrl;
+
                 print('🖼️ Profile picture URL: $picUrl');
                 if (picUrl == null || picUrl.isEmpty) {
                   print('⚠️ No profile picture URL available');
                 }
-                
+
                 return UserAccountsDrawerHeader(
                   accountName: Text(displayName),
                   accountEmail: Text(email),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
                     backgroundImage: picUrl != null && picUrl.isNotEmpty
-                      ? NetworkImage(
-                          picUrl,
-                          headers: {
-                            'Cache-Control': 'no-cache',
-                          },
-                        ) as ImageProvider
-                      : null,
+                        ? NetworkImage(
+                            picUrl,
+                            headers: {
+                              'Cache-Control': 'no-cache',
+                            },
+                          ) as ImageProvider
+                        : null,
                     child: picUrl == null || picUrl.isEmpty
-                      ? const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32))
-                      : null,
+                        ? const Icon(
+                            Icons.person,
+                            size: 40,
+                            color: Color(0xFF2E7D32),
+                          )
+                        : null,
                   ),
                   decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
                 );
@@ -245,31 +271,31 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             if (Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
-               ListTile(
-                 leading: const Icon(Icons.list_alt_rounded),
-                 title: const Text("Spare Part Requests"),
-                 onTap: () {
-                   Navigator.pop(context);
-                   Navigator.pushNamed(context, '/seller-spare-part-requests');
-                 },
-               ),
+              ListTile(
+                leading: const Icon(Icons.list_alt_rounded),
+                title: const Text("Spare Part Requests"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/seller-spare-part-requests');
+                },
+              ),
             ] else ...[
-               ListTile(
-                 leading: const Icon(Icons.search_rounded),
-                 title: const Text("Find a Spare Part"),
-                 onTap: () {
-                   Navigator.pop(context);
-                   Navigator.pushNamed(context, '/find-spare-part');
-                 },
-               ),
-               ListTile(
-                 leading: const Icon(Icons.history_rounded),
-                 title: const Text("My Requests"),
-                 onTap: () {
-                   Navigator.pop(context);
-                   Navigator.pushNamed(context, '/my-spare-part-requests');
-                 },
-               ),
+              ListTile(
+                leading: const Icon(Icons.search_rounded),
+                title: const Text("Find a Spare Part"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/find-spare-part');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.history_rounded),
+                title: const Text("My Requests"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/my-spare-part-requests');
+                },
+              ),
             ],
             const Divider(),
             ListTile(
@@ -286,22 +312,21 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.pop(context);
                 Provider.of<AuthProvider>(context, listen: false).logout();
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                  (route) => false,
+                );
               },
             ),
-
           ],
         ),
       ),
-
-          
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Greeting & Weather Section (Animated) ---
             TweenAnimationBuilder(
               duration: const Duration(milliseconds: 800),
               tween: Tween<double>(begin: 0, end: 1),
@@ -327,14 +352,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             "$_greeting,",
                             style: TextStyle(
                               fontSize: 16,
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                              color: theme.textTheme.bodyMedium?.color
+                                  ?.withOpacity(0.7),
                             ),
                           ),
                           Consumer<AuthProvider>(
                             builder: (context, auth, _) {
-                              final name = auth.isSeller 
-                                ? (auth.seller?.businessName ?? "Store") 
-                                : (auth.user?.firstname ?? context.tr('hello_farmer'));
+                              final name = auth.isSeller
+                                  ? (auth.seller?.businessName ?? "Store")
+                                  : (auth.user?.firstname ??
+                                      context.tr('hello_farmer'));
                               return Text(
                                 name,
                                 style: const TextStyle(
@@ -347,13 +374,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                              color:
+                                  Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -361,12 +392,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(_weatherIcon, color: Colors.blueAccent, size: 22),
+                            Icon(
+                              _weatherIcon,
+                              color: Colors.blueAccent,
+                              size: 22,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               _weatherTemp,
                               style: TextStyle(
-                                fontWeight: FontWeight.bold, 
+                                fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 color: theme.textTheme.bodyLarge?.color,
                               ),
@@ -379,28 +414,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 14, color: Colors.redAccent),
+                      const Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.redAccent,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         _locationName,
-                        style: TextStyle(fontSize: 14, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.6),
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Icon(Icons.cloud_queue, size: 14, color: Colors.blueGrey[400]),
+                      Icon(
+                        Icons.cloud_queue,
+                        size: 14,
+                        color: Colors.blueGrey[400],
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         _weatherDescription,
-                        style: TextStyle(fontSize: 14, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.6),
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            
             const SizedBox(height: 32),
-            
-            // --- Seller Stats ---
             if (Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
               Row(
                 children: [
@@ -442,7 +490,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _buildStatCard(
                       context,
                       title: "Success Rate",
-                      value: _totalOffers > 0 ? "${((_completedDeals / _totalOffers) * 100).toStringAsFixed(0)}%" : "0%",
+                      value: _totalOffers > 0
+                          ? "${((_completedDeals / _totalOffers) * 100).toStringAsFixed(0)}%"
+                          : "0%",
                       icon: Icons.trending_up,
                       color: Colors.purple,
                     ),
@@ -451,132 +501,144 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 32),
             ],
-            
-            // --- Feature Cards ---
             if (!Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
-            _buildAnimatedCard(
-              index: 1,
-              child: _buildFeatureCard(
-                context,
-                title: context.tr('lifespan_forecast'),
-                subtitle: context.tr('check_remaining_hours'),
-                icon: Icons.auto_graph_rounded,
-                color: Colors.orange.withOpacity(0.1),
-                iconColor: Colors.orange,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PredictScreen())),
+              _buildAnimatedCard(
+                index: 1,
+                child: _buildFeatureCard(
+                  context,
+                  title: context.tr('lifespan_forecast'),
+                  subtitle: context.tr('check_remaining_hours'),
+                  icon: Icons.auto_graph_rounded,
+                  color: Colors.orange.withOpacity(0.1),
+                  iconColor: Colors.orange,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PredictScreen(),
+                    ),
+                  ),
+                ),
               ),
-            ),
-
-            _buildAnimatedCard(
-              index: 2,
-              child: _buildFeatureCard(
-                context,
-                title: context.tr('scan_spare_part'),
-                subtitle: context.tr('detect_wear_tear'),
-                icon: Icons.document_scanner_rounded,
-                color: Colors.blue.withOpacity(0.1),
-                iconColor: Colors.blue,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
+              _buildAnimatedCard(
+                index: 2,
+                child: _buildFeatureCard(
+                  context,
+                  title: context.tr('scan_spare_part'),
+                  subtitle: context.tr('detect_wear_tear'),
+                  icon: Icons.document_scanner_rounded,
+                  color: Colors.blue.withOpacity(0.1),
+                  iconColor: Colors.blue,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LifecyclePredictionScreen(),
+                    ),
+                  ),
+                ),
               ),
-            ),
-
-            _buildAnimatedCard(
-              index: 3,
-              child: _buildFeatureCard(
-                context,
-                title: context.tr('find_suppliers'),
-                subtitle: context.tr('locate_verified_sellers'),
-                icon: Icons.map_rounded,
-                color: Colors.green.withOpacity(0.1),
-                iconColor: Colors.green,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SupplierScreen())),
+              _buildAnimatedCard(
+                index: 3,
+                child: _buildFeatureCard(
+                  context,
+                  title: context.tr('find_suppliers'),
+                  subtitle: context.tr('locate_verified_sellers'),
+                  icon: Icons.map_rounded,
+                  color: Colors.green.withOpacity(0.1),
+                  iconColor: Colors.green,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SupplierScreen(),
+                    ),
+                  ),
+                ),
               ),
-            ),
-
-            _buildAnimatedCard(
-              index: 4,
-              child: _buildFeatureCard(
-                context,
-                title: "My Reservations",
-                subtitle: "View secure blockchain contracts",
-                icon: Icons.vpn_key_rounded,
-                color: Colors.purple.withOpacity(0.1),
-                iconColor: Colors.purple,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.tr('blockchain_coming_soon'))),
-                  );
-                },
+              _buildAnimatedCard(
+                index: 4,
+                child: _buildFeatureCard(
+                  context,
+                  title: "My Reservations",
+                  subtitle: "View secure blockchain contracts",
+                  icon: Icons.vpn_key_rounded,
+                  color: Colors.purple.withOpacity(0.1),
+                  iconColor: Colors.purple,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          context.l10n.tr('blockchain_coming_soon'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-
-            _buildAnimatedCard(
-              index: 5,
-              child: _buildFeatureCard(
-                context,
-                title: context.tr('spare_part_analysis'),
-                subtitle: context.tr('analyze_part_lifecycle'),
-                icon: Icons.analytics_rounded,
-                color: Colors.teal.withOpacity(0.1),
-                iconColor: Colors.teal,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LifecyclePredictionScreen())),
+              _buildAnimatedCard(
+                index: 5,
+                child: _buildFeatureCard(
+                  context,
+                  title: context.tr('spare_part_analysis'),
+                  subtitle: context.tr('analyze_part_lifecycle'),
+                  icon: Icons.analytics_rounded,
+                  color: Colors.teal.withOpacity(0.1),
+                  iconColor: Colors.teal,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LifecyclePredictionScreen(),
+                    ),
+                  ),
+                ),
               ),
+            ],
+            const SizedBox(height: 20),
+            const Text(
+              "Smart Recommendation System",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            ], // Close the conditional for farmer features
-
-             // ================= YOUR SECTION =================
-          const SizedBox(height: 20),
-          const Text(
-            "Smart Recommendation System",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-
-          _buildFeatureCard(
-            context,
-            title: "NLP Spare Part Search",
-            subtitle: "Search parts using natural language",
-            icon: Icons.search,
-            color: Colors.green.shade100,
-            iconColor: Colors.green,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => NlpSearchScreen()),
-              );
-            },
-          ),
-
-          _buildFeatureCard(
-            context,
-            title: "Compatibility Recommender",
-            subtitle: "Find alternative compatible parts",
-            icon: Icons.sync_alt,
-            color: Colors.teal.shade100,
-            iconColor: Colors.teal,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => CompatibilityScreen()),
-              );
-            },
-          ),
-
-          _buildFeatureCard(
-            context,
-            title: "Inventory Optimization",
-            subtitle: "Predict demand & optimize stock",
-            icon: Icons.inventory_2,
-            color: Colors.lime.shade100,
-            iconColor: Colors.lime.shade800,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => InventoryOptimizationScreen()),
-              );
-            },
-          ),
-          
+            const SizedBox(height: 10),
+            _buildFeatureCard(
+              context,
+              title: "NLP Spare Part Search",
+              subtitle: "Search parts using natural language",
+              icon: Icons.search,
+              color: Colors.green.shade100,
+              iconColor: Colors.green,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => NlpSearchScreen()),
+                );
+              },
+            ),
+            _buildFeatureCard(
+              context,
+              title: "Dynamic Compatibility Recommender",
+              subtitle:
+                  "Find alternative compatible parts when original stock is unavailable",
+              icon: Icons.sync_alt,
+              color: Colors.teal.shade100,
+              iconColor: Colors.teal,
+              onTap: () {
+                Navigator.pushNamed(context, '/compatibility');
+              },
+            ),
+            _buildFeatureCard(
+              context,
+              title: "Inventory Optimization",
+              subtitle: "Predict demand & optimize stock",
+              icon: Icons.inventory_2,
+              color: Colors.lime.shade100,
+              iconColor: Colors.lime.shade800,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => InventoryOptimizationScreen(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -588,17 +650,32 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const SparePartScanScreen()))
-                .then((_) => setState(() => _selectedIndex = 0));
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SparePartScanScreen(),
+              ),
+            ).then((_) => setState(() => _selectedIndex = 0));
           } else if (index == 2) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()))
-                .then((_) => setState(() => _selectedIndex = 0));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            ).then((_) => setState(() => _selectedIndex = 0));
           }
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt_rounded), label: "Scan"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profile"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: "Home",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt_rounded),
+            label: "Scan",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: "Profile",
+          ),
         ],
       ),
     );
@@ -621,13 +698,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFeatureCard(BuildContext context,
-      {required String title,
-      required String subtitle,
-      required IconData icon,
-      required Color color,
-      required Color iconColor,
-      required VoidCallback onTap}) {
+  Widget _buildFeatureCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
@@ -663,11 +742,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.color
+                          ?.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
@@ -679,11 +768,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatCard(BuildContext context,
-      {required String title,
-      required String value,
-      required IconData icon,
-      required Color color}) {
+  Widget _buildStatCard(
+    BuildContext context, {
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -724,7 +815,11 @@ class _HomeScreenState extends State<HomeScreen> {
             title,
             style: TextStyle(
               fontSize: 12,
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+              color: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.color
+                  ?.withOpacity(0.6),
             ),
           ),
         ],
