@@ -101,6 +101,16 @@ class ApiService {
     }
   }
 
+  /// Parse JSON response that can be either List or Map
+  dynamic _parseJsonResponseFlexible(http.Response response) {
+    try {
+      return jsonDecode(response.body);
+    } catch (e) {
+      ErrorHandler.logError('Failed to parse JSON response', e);
+      throw Exception('Invalid response format from server');
+    }
+  }
+
   /// Generic POST request method
   Future<Map<String, dynamic>> post(String endpoint, {Map<String, dynamic>? body}) async {
     try {
@@ -542,6 +552,26 @@ class ApiService {
     }
   }
 
+  /// Get seller profile by ID
+  Future<Map<String, dynamic>> getSellerById(int sellerId) async {
+    try {
+      final response = await _makeRequest('GET', '/api/sellers/$sellerId');
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Seller details loaded successfully for seller $sellerId');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load seller details for seller $sellerId', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
   /// Update seller profile
   Future<Seller> updateSellerProfile({
     String? businessName,
@@ -815,9 +845,16 @@ class ApiService {
       final response = await _makeRequest('GET', '/api/spare-parts/my-offers');
 
       if (response.statusCode == 200) {
-        final result = _parseJsonResponse(response);
+        final result = _parseJsonResponseFlexible(response);
         ErrorHandler.logInfo('Fetched seller offers successfully');
-        return result is List ? List<dynamic>.from(result as List) : [];
+        if (result is List) {
+          return List<dynamic>.from(result);
+        } else if (result is Map && result.containsKey('offers')) {
+          // Handle case where API returns {offers: [...]}
+          return List<dynamic>.from(result['offers'] as List);
+        } else {
+          return [];
+        }
       } else {
         final errorMessage = ErrorHandler.handleHttpError(response);
         throw Exception(errorMessage);
@@ -866,13 +903,13 @@ class ApiService {
   /// Predict spare part lifecycle using AI and vision analysis
   Future<Map<String, dynamic>> predictLifecycle({
     required String partName,
-    required double usageHours,
+    double? usageHours,
     required String location,
     required String imagePath,
   }) async {
     try {
       print('🔧 Starting lifecycle prediction API call...');
-      print('📝 Part: $partName, Hours: $usageHours, Location: $location');
+      print('📝 Part: $partName, Hours: ${usageHours ?? 'N/A'}, Location: $location');
       print('📸 Image path: $imagePath');
 
       final uri = Uri.parse('$baseUrl/api/predict-lifecycle');
@@ -889,7 +926,9 @@ class ApiService {
 
       // Add form fields
       request.fields['part_name'] = partName;
-      request.fields['usage_hours'] = usageHours.toString();
+      if (usageHours != null) {
+        request.fields['usage_hours'] = usageHours.toString();
+      }
       request.fields['location'] = location;
       print('📋 Form fields added');
 
@@ -999,6 +1038,49 @@ class ApiService {
     }
   }
 
+  /// Identify a spare part using the remote ML endpoint
+  Future<Map<String, dynamic>> identifyPart(String imagePath) async {
+    try {
+      print('🔍 Identifying part with image at: $imagePath');
+
+      final uri = Uri.parse('$baseUrl/api/identify-part');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header if available
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Ensure file exists before adding
+      final imageFile = File(imagePath);
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist: $imagePath');
+      }
+
+      request.files.add(await http.MultipartFile.fromPath('image', imagePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Part identification succeeded');
+        // log full response for debugging
+        print('✅ identifyPart response: $result');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('❌ identifyPart API error: $e');
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to identify part', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
   /// Delete user account
   Future<void> deleteAccount() async {
     try {
@@ -1018,4 +1100,401 @@ class ApiService {
       throw Exception(friendlyMessage);
     }
   }
+
+  /// Create payment intent for spare part order
+  Future<Map<String, dynamic>> createPaymentIntent(
+    int offerId, {
+    bool saveCard = false,
+    String? paymentMethodId,
+  }) async {
+    try {
+      final body = {
+        'offer_id': offerId,
+        'save_card': saveCard,
+        // Disable redirect-based payment methods for mobile app
+        'automatic_payment_methods_enabled': true,
+        'automatic_payment_methods_allow_redirects': 'never',
+      };
+      if (paymentMethodId != null) {
+        body['payment_method_id'] = paymentMethodId;
+      }
+
+      final response = await _makeRequest(
+        'POST',
+        '/api/payments/create-intent',
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        ErrorHandler.logInfo('Payment intent created successfully');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to create payment intent', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Confirm payment
+  /// Returns a map with 'success' (bool) and optionally 'status' and 'message' fields
+  /// If success is false, check 'status' to see if payment is still in progress
+  Future<Map<String, dynamic>> confirmPayment(
+    String paymentIntentId, {
+    bool saveCard = false,
+    String? returnUrl,
+  }) async {
+    try {
+      final body = {
+        'payment_intent_id': paymentIntentId,
+        'save_card': saveCard,
+      };
+      
+      // Add return_url if provided (required for 3D Secure)
+      if (returnUrl != null && returnUrl.isNotEmpty) {
+        body['return_url'] = returnUrl;
+      } else {
+        // Use default return URL for mobile app
+        body['return_url'] = 'smartfarmer://payment-return';
+      }
+      
+      final response = await _makeRequest(
+        'POST',
+        '/api/payments/confirm',
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        // Backend now returns success: true/false and status field
+        // Handle both old format (success: true) and new format (success: false with status)
+        if (result['success'] == true) {
+          ErrorHandler.logInfo('Payment confirmed successfully');
+        } else {
+          final status = result['status'] as String?;
+          final message = result['message'] as String?;
+          ErrorHandler.logInfo('Payment confirmation response: status=$status, message=$message');
+        }
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to confirm payment', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get user's payments
+  Future<List<dynamic>> getMyPayments() async {
+    try {
+      final response = await _makeRequest('GET', '/api/payments/my-payments');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        ErrorHandler.logInfo('My payments loaded successfully');
+        return data;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load my payments', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get seller's approved payments
+  Future<List<dynamic>> getSellerPayments() async {
+    try {
+      final response = await _makeRequest('GET', '/api/payments/seller-payments');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        ErrorHandler.logInfo('Seller payments loaded successfully');
+        return data;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load seller payments', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get saved payment methods
+  Future<List<dynamic>> getSavedPaymentMethods() async {
+    try {
+      final response = await _makeRequest('GET', '/api/payments/saved-methods');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        ErrorHandler.logInfo('Saved payment methods loaded successfully');
+        return data;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to load saved payment methods', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Delete saved payment method
+  Future<void> deleteSavedPaymentMethod(int methodId) async {
+    try {
+      final response = await _makeRequest(
+        'DELETE',
+        '/api/payments/saved-methods/$methodId',
+      );
+
+      if (response.statusCode == 200) {
+        ErrorHandler.logInfo('Payment method deleted successfully');
+        return;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to delete payment method', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Set default payment method
+  Future<void> setDefaultPaymentMethod(int methodId) async {
+    try {
+      final response = await _makeRequest(
+        'PUT',
+        '/api/payments/saved-methods/$methodId/set-default',
+      );
+
+      if (response.statusCode == 200) {
+        ErrorHandler.logInfo('Default payment method updated successfully');
+        return;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to set default payment method', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  // ============================================================================
+  // TYRE HEALTH & DAMAGE DETECTION API METHODS
+  // ============================================================================
+
+  /// Detect tyre damage using YOLOv8 model
+  Future<Map<String, dynamic>> detectTyreDamage({
+    required String imagePath,
+    double confidenceThreshold = 0.25,
+    bool saveAnnotated = true,
+  }) async {
+    try {
+      print('🚗 Starting tyre damage detection...');
+      print('📸 Image path: $imagePath');
+
+      final uri = Uri.parse('$baseUrl/api/tyre/detect-damage');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authorization header if available
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add form fields
+      request.fields['confidence_threshold'] = confidenceThreshold.toString();
+      request.fields['save_annotated'] = saveAnnotated.toString();
+
+      // Check if image file exists
+      final imageFile = File(imagePath);
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist: $imagePath');
+      }
+
+      // Add image file
+      final multipartFile = await http.MultipartFile.fromPath('image', imagePath);
+      request.files.add(multipartFile);
+
+      // Send request
+      print('📤 Sending detection request...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 Response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Damage detection completed');
+        ErrorHandler.logInfo('Tyre damage detection completed');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to detect tyre damage', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Predict tyre remaining life
+  Future<Map<String, dynamic>> predictTyreLife({
+    required String damageType,
+    required String damageSeverity,
+    required double lifespanReduction,
+    required double usageHoursPerWeek,
+    required double monthsUsed,
+    String tyreType = 'default',
+    double confidence = 0.8,
+  }) async {
+    try {
+      print('🔮 Predicting tyre life...');
+
+      final response = await _makeRequest(
+        'POST',
+        '/api/tyre/predict-life',
+        body: {
+          'damage_type': damageType,
+          'damage_severity': damageSeverity,
+          'lifespan_reduction': lifespanReduction,
+          'usage_hours_per_week': usageHoursPerWeek,
+          'months_used': monthsUsed,
+          'tyre_type': tyreType,
+          'confidence': confidence,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Life prediction completed');
+        ErrorHandler.logInfo('Tyre life prediction completed');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to predict tyre life', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Start voice chat session for tyre health
+  Future<Map<String, dynamic>> startTyreVoiceChat({
+    required String damageType,
+    required double confidence,
+    required String severity,
+    required double lifespanReduction,
+    String language = 'si', // Default to Sinhala
+  }) async {
+    try {
+      print('💬 Starting voice chat session...');
+
+      final response = await _makeRequest(
+        'POST',
+        '/api/tyre/voice-chat/start',
+        body: {
+          'damage_type': damageType,
+          'confidence': confidence,
+          'severity': severity,
+          'lifespan_reduction': lifespanReduction,
+          'language': language,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Chat session started: ${result['session_id']}');
+        ErrorHandler.logInfo('Voice chat session started');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to start voice chat', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Continue voice chat conversation
+  Future<Map<String, dynamic>> continueTyreVoiceChat({
+    required String sessionId,
+    required String message,
+  }) async {
+    try {
+      print('💬 Continuing chat: $sessionId');
+
+      final response = await _makeRequest(
+        'POST',
+        '/api/tyre/voice-chat/continue',
+        body: {
+          'session_id': sessionId,
+          'message': message,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Chat response received');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to continue chat', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  /// Get chat session summary
+  Future<Map<String, dynamic>> getTyreChatSummary(String sessionId) async {
+    try {
+      print('📊 Getting chat summary: $sessionId');
+
+      final response = await _makeRequest(
+        'GET',
+        '/api/tyre/voice-chat/$sessionId/summary',
+      );
+
+      if (response.statusCode == 200) {
+        final result = _parseJsonResponse(response);
+        print('✅ Summary retrieved');
+        return result;
+      } else {
+        final errorMessage = ErrorHandler.handleHttpError(response);
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      final friendlyMessage = ErrorHandler.getUserFriendlyMessage(e);
+      ErrorHandler.logError('Failed to get chat summary', e);
+      throw Exception(friendlyMessage);
+    }
+  }
+
+ // ============================================================================
+  // END TYRE HEALTH SYSTEM
+  // ============================================================================
 }

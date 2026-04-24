@@ -6,6 +6,67 @@ import '../providers/auth_provider.dart';
 import '../services/l10n_extension.dart';
 import '../utils/error_handler.dart';
 
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+class _C {
+  static const forest   = Color(0xFF1B4332);
+  static const leaf     = Color(0xFF2D6A4F);
+  static const sage     = Color(0xFF52B788);
+  static const mint     = Color(0xFFB7E4C7);
+  static const cream    = Color(0xFFF8F5F0);
+  static const sand     = Color(0xFFEDE8DF);
+  static const charcoal = Color(0xFF2C2C2C);
+  static const slate    = Color(0xFF6B7280);
+  static const error    = Color(0xFFDC2626);
+}
+
+InputDecoration _fieldDeco({
+  required String label,
+  String? hint,
+  required IconData icon,
+  String? helper,
+  Widget? suffix,
+}) {
+  return InputDecoration(
+    labelText: label,
+    hintText: hint,
+    helperText: helper,
+    helperStyle: TextStyle(color: _C.slate.withOpacity(0.7), fontSize: 11),
+    labelStyle: const TextStyle(
+        color: _C.slate, fontSize: 13, fontWeight: FontWeight.w500),
+    floatingLabelStyle: const TextStyle(
+        color: _C.forest, fontSize: 13, fontWeight: FontWeight.w600),
+    hintStyle:
+        TextStyle(color: _C.slate.withOpacity(0.5), fontSize: 13),
+    prefixIcon: Icon(icon, color: _C.sage, size: 20),
+    suffixIcon: suffix,
+    filled: true,
+    fillColor: Colors.white,
+    contentPadding:
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: _C.sand, width: 1.5),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: _C.sand, width: 1.5),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: _C.sage, width: 2),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: _C.error, width: 1.5),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: _C.error, width: 2),
+    ),
+  );
+}
+
+// ─── Register Screen ──────────────────────────────────────────────────────────
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -13,17 +74,38 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
+  final _formKey             = GlobalKey<FormState>();
   final _firstnameController = TextEditingController();
-  final _lastnameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _lastnameController  = TextEditingController();
+  final _emailController     = TextEditingController();
+  final _passwordController  = TextEditingController();
+  final _phoneController     = TextEditingController();
+  final _addressController   = TextEditingController();
+
+  bool _obscurePassword = true;
+
+  late AnimationController _animCtrl;
+  late Animation<double>   _fadeAnim;
+  late Animation<Offset>   _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 650));
+    _fadeAnim  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.07),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
+    _animCtrl.forward();
+  }
 
   @override
   void dispose() {
+    _animCtrl.dispose();
     _firstnameController.dispose();
     _lastnameController.dispose();
     _emailController.dispose();
@@ -33,342 +115,659 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  void _showSnack(String msg, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(children: [
+          Icon(
+            isError ? Icons.info_outline : Icons.check_circle_outline,
+            color: Colors.white,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(msg)),
+        ]),
+        backgroundColor: isError ? _C.error : _C.leaf,
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    final success = await authProvider.register(
-      firstname: _firstnameController.text.trim(),
-      lastname: _lastnameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final ok   = await auth.register(
+      firstname:   _firstnameController.text.trim(),
+      lastname:    _lastnameController.text.trim(),
+      email:       _emailController.text.trim(),
+      password:    _passwordController.text,
+      phoneNumber: _phoneController.text.trim().isEmpty
+          ? null
+          : _phoneController.text.trim(),
+      address: _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text.trim(),
     );
 
     if (!mounted) return;
 
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('account_created')),
-          backgroundColor: Colors.green,
-        ),
-      );
+    if (ok) {
+      _showSnack(context.tr('account_created'), isError: false);
       Navigator.pushReplacementNamed(context, '/home');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? context.tr('registration_failed')),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnack(
+          auth.errorMessage ?? context.tr('registration_failed'));
     }
   }
 
   Future<void> _handleSocialLogin(String provider) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
     try {
-      String email = '';
-      String firstname = '';
-      String lastname = '';
-      String socialId = '';
-      String? profilePictureUrl;
+      String email = '', firstname = '', lastname = '', socialId = '';
+      String? profilePic;
 
       if (provider == 'google') {
-        final GoogleSignIn googleSignIn = GoogleSignIn(
+        final gs = GoogleSignIn(
           scopes: ['email'],
-          serverClientId: '941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com',
+          serverClientId:
+              '941688275134-rdm2qs0drvkceu69f0n8n71lth01h63b.apps.googleusercontent.com',
         );
-        await googleSignIn.signOut();
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        if (googleUser == null) return;
+        await gs.signOut();
+        final user = await gs.signIn();
+        if (user == null) return;
 
-        email = googleUser.email;
-        final nameParts = googleUser.displayName?.split(' ') ?? ['User'];
-        firstname = nameParts[0];
-        lastname = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
-        socialId = googleUser.id;
-        profilePictureUrl = googleUser.photoUrl;
-      } else if (provider == 'facebook') {
-        final LoginResult result = await FacebookAuth.instance.login();
-        if (result.status != LoginStatus.success) return;
+        email      = user.email;
+        final np   = user.displayName?.split(' ') ?? ['User'];
+        firstname  = np[0];
+        lastname   = np.length > 1 ? np.sublist(1).join(' ') : '';
+        socialId   = user.id;
+        profilePic = user.photoUrl;
+      } else {
+        final res = await FacebookAuth.instance.login();
+        if (res.status != LoginStatus.success) return;
 
-        final userData = await FacebookAuth.instance.getUserData();
-        email = userData['email'];
-        final nameParts = (userData['name'] as String).split(' ');
-        firstname = nameParts[0];
-        lastname = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
-        socialId = userData['id'];
-        profilePictureUrl = userData['picture']['data']['url'];
+        final ud   = await FacebookAuth.instance.getUserData();
+        email      = ud['email'];
+        final np   = (ud['name'] as String).split(' ');
+        firstname  = np[0];
+        lastname   = np.length > 1 ? np.sublist(1).join(' ') : '';
+        socialId   = ud['id'];
+        profilePic = ud['picture']['data']['url'];
       }
 
-      final success = await authProvider.socialLogin(
+      final ok = await auth.socialLogin(
         provider: provider,
         idToken: socialId,
         email: email,
-        name: "$firstname $lastname",
-        photoUrl: profilePictureUrl,
+        name: '$firstname $lastname',
+        photoUrl: profilePic,
       );
 
       if (!mounted) return;
-      if (success) {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      if (ok) {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? "Social login failed")),
-        );
+        _showSnack(auth.errorMessage ?? 'Social login failed');
       }
     } catch (e) {
       if (!mounted) return;
-      final errorMessage = ErrorHandler.getUserFriendlyMessage(e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnack(ErrorHandler.getUserFriendlyMessage(e));
     }
   }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register as Farmer'),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
+      backgroundColor: _C.cream,
+      body: Stack(
+        children: [
+          // Decorative blobs
+          Positioned(
+            top: -60,
+            left: -50,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _C.mint.withOpacity(0.28),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            right: -70,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _C.sage.withOpacity(0.1),
+              ),
+            ),
+          ),
+
+          SafeArea(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 20),
-                Text(
-                  'Create Farmer Account',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                // ── Custom AppBar ──────────────────────────────────────
+                Padding(
+                  padding:
+                      const EdgeInsets.fromLTRB(8, 8, 16, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border:
+                                Border.all(color: _C.sand, width: 1.5),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new_rounded,
+                              size: 16, color: _C.charcoal),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Spacer(),
+                      // Step badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _C.mint,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.agriculture_rounded,
+                                size: 14, color: _C.forest),
+                            SizedBox(width: 5),
+                            Text(
+                              'Farmer Account',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: _C.forest,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Buy farm equipment & spare parts',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).textTheme.bodySmall?.color,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
 
-                // Social Login Options
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _handleSocialLogin('google'),
-                        icon: const Icon(Icons.g_mobiledata, size: 28),
-                        label: const Text('Google'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                // ── Scrollable body ────────────────────────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: FadeTransition(
+                      opacity: _fadeAnim,
+                      child: SlideTransition(
+                        position: _slideAnim,
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 20),
+
+                              // ── Header ─────────────────────────────
+                              const Text(
+                                'Create your\naccount',
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  color: _C.charcoal,
+                                  letterSpacing: -0.6,
+                                  height: 1.15,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Buy seeds, tools & supplies from verified sellers',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: _C.slate.withOpacity(0.8),
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+
+                              // ── Social Buttons ─────────────────────
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _SocialBtn(
+                                      icon: Icons.g_mobiledata_rounded,
+                                      iconColor: const Color(0xFFEA4335),
+                                      label: 'Google',
+                                      onTap: () =>
+                                          _handleSocialLogin('google'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _SocialBtn(
+                                      icon: Icons.facebook_rounded,
+                                      iconColor: const Color(0xFF1877F2),
+                                      label: 'Facebook',
+                                      onTap: () =>
+                                          _handleSocialLogin('facebook'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+
+                              // ── Divider ────────────────────────────
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [
+                                          Colors.transparent,
+                                          _C.sand,
+                                        ]),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14),
+                                    child: Text(
+                                      'or fill in details',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _C.slate.withOpacity(0.7),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [
+                                          _C.sand,
+                                          Colors.transparent,
+                                        ]),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+
+                              // ── Section: Personal Info ─────────────
+                              _SectionLabel(
+                                  label: 'Personal Info',
+                                  icon: Icons.person_outline_rounded),
+                              const SizedBox(height: 14),
+
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _firstnameController,
+                                      style: _inputTextStyle,
+                                      decoration: _fieldDeco(
+                                        label: context.tr('first_name'),
+                                        icon: Icons.person_outline_rounded,
+                                      ),
+                                      validator: (v) =>
+                                          (v == null || v.isEmpty)
+                                              ? context.tr(
+                                                  'please_enter_first_name')
+                                              : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _lastnameController,
+                                      style: _inputTextStyle,
+                                      decoration: _fieldDeco(
+                                        label: context.tr('last_name'),
+                                        icon: Icons.person_outline_rounded,
+                                      ),
+                                      validator: (v) =>
+                                          (v == null || v.isEmpty)
+                                              ? context.tr(
+                                                  'please_enter_last_name')
+                                              : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+
+                              // ── Section: Account ───────────────────
+                              _SectionLabel(
+                                  label: 'Account Details',
+                                  icon: Icons.shield_outlined),
+                              const SizedBox(height: 14),
+
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                style: _inputTextStyle,
+                                decoration: _fieldDeco(
+                                  label: context.tr('email'),
+                                  hint: 'you@example.com',
+                                  icon: Icons.mail_outline_rounded,
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty)
+                                    return context.tr('please_enter_email');
+                                  if (!v.contains('@'))
+                                    return context
+                                        .tr('please_enter_valid_email');
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                style: _inputTextStyle,
+                                decoration: _fieldDeco(
+                                  label: context.tr('password'),
+                                  hint: '••••••••',
+                                  icon: Icons.lock_outline_rounded,
+                                  helper:
+                                      context.tr('password_min_length'),
+                                  suffix: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: _C.slate,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => setState(() =>
+                                        _obscurePassword =
+                                            !_obscurePassword),
+                                  ),
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty)
+                                    return context
+                                        .tr('please_enter_password');
+                                  if (v.length < 6)
+                                    return context
+                                        .tr('password_too_short');
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+
+                              // ── Section: Contact (optional) ────────
+                              _SectionLabel(
+                                label: 'Contact',
+                                icon: Icons.contacts_outlined,
+                                isOptional: true,
+                              ),
+                              const SizedBox(height: 14),
+
+                              TextFormField(
+                                controller: _phoneController,
+                                keyboardType: TextInputType.phone,
+                                style: _inputTextStyle,
+                                decoration: _fieldDeco(
+                                  label: context.tr('phone'),
+                                  hint: '+1 234 567 8900',
+                                  icon: Icons.phone_outlined,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              TextFormField(
+                                controller: _addressController,
+                                maxLines: 2,
+                                style: _inputTextStyle,
+                                decoration: _fieldDeco(
+                                  label: context.tr('address'),
+                                  hint: 'Street, City, Country',
+                                  icon: Icons.location_on_outlined,
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+
+                              // ── Register Button ────────────────────
+                              Consumer<AuthProvider>(
+                                builder: (_, auth, __) =>
+                                    auth.isLoading
+                                        ? _loadingBtn
+                                        : SizedBox(
+                                            height: 52,
+                                            child: ElevatedButton(
+                                              onPressed: _register,
+                                              style:
+                                                  ElevatedButton.styleFrom(
+                                                backgroundColor: _C.forest,
+                                                foregroundColor:
+                                                    Colors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            14)),
+                                              ),
+                                              child: Text(
+                                                context.tr('register'),
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight:
+                                                      FontWeight.w700,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // ── Sign in link ───────────────────────
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    context.tr('already_have_account') +
+                                        ' ',
+                                    style: TextStyle(
+                                        fontSize: 13, color: _C.slate),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => Navigator.pop(context),
+                                    child: const Text(
+                                      'Sign in',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _C.forest,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 36),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _handleSocialLogin('facebook'),
-                        icon: const Icon(Icons.facebook, size: 24),
-                        label: const Text('Facebook'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Basic Information
-                TextFormField(
-                  controller: _firstnameController,
-                  decoration: InputDecoration(
-                    labelText: '${context.tr('first_name')} *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.person),
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_first_name');
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _lastnameController,
-                  decoration: InputDecoration(
-                    labelText: '${context.tr('last_name')} *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.person_outline),
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_last_name');
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: '${context.tr('email')} *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.email),
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_email');
-                    }
-                    if (!value.contains('@')) {
-                      return context.tr('please_enter_valid_email');
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: '${context.tr('password')} *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.lock),
-                    helperText: context.tr('password_min_length'),
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.tr('please_enter_password');
-                    }
-                    if (value.length < 6) {
-                      return context.tr('password_too_short');
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: '${context.tr('phone')} (${context.tr('optional')})',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.phone),
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _addressController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: '${context.tr('address')} (${context.tr('optional')})',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.location_on),
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]
-                        : Colors.grey[50],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    return authProvider.isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ElevatedButton(
-                            onPressed: _register,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2E7D32),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: Text(
-                              context.tr('register'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(context.tr('already_have_account')),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const _inputTextStyle = TextStyle(
+  fontSize: 15,
+  color: _C.charcoal,
+  fontWeight: FontWeight.w500,
+);
+
+final _loadingBtn = Container(
+  height: 52,
+  decoration: BoxDecoration(
+    color: _C.forest,
+    borderRadius: BorderRadius.circular(14),
+  ),
+  child: const Center(
+    child: SizedBox(
+      width: 22,
+      height: 22,
+      child: CircularProgressIndicator(
+          strokeWidth: 2.5, color: Colors.white),
+    ),
+  ),
+);
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({
+    required this.label,
+    required this.icon,
+    this.isOptional = false,
+  });
+
+  final String   label;
+  final IconData icon;
+  final bool     isOptional;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: _C.forest,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Icon(icon, color: Colors.white, size: 14),
+        ),
+        const SizedBox(width: 9),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: _C.forest,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (isOptional) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: _C.sand,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Text(
+              'optional',
+              style: TextStyle(
+                  fontSize: 10,
+                  color: _C.slate,
+                  fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  _C.sage.withOpacity(0.35),
+                  Colors.transparent
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SocialBtn extends StatelessWidget {
+  const _SocialBtn({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color    iconColor;
+  final String   label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: _C.sand, width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: iconColor, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: _C.charcoal,
+                ),
+              ),
+            ],
           ),
         ),
       ),
