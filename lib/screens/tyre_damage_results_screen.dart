@@ -965,6 +965,78 @@ class _ModelBadge extends StatelessWidget {
   }
 }
 
+class _LifePredictionCard extends StatelessWidget {
+  final Map<String, dynamic> prediction;
+  final Color forest, leaf, charcoal, warmWhite, muted;
+
+  const _LifePredictionCard({
+    required this.prediction,
+    required this.forest,
+    required this.leaf,
+    required this.charcoal,
+    required this.warmWhite,
+    required this.muted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final prediction_data = prediction['prediction'] as Map<String, dynamic>? ?? {};
+    final remainingLifeValue = prediction_data['remaining_life_months'];
+    final status = prediction_data['status'] ?? 'Unknown';
+    final recommendations = prediction_data['recommendations'] as List? ?? [];
+
+    String remainingLifeText;
+    if (remainingLifeValue is num) {
+      remainingLifeText = '${remainingLifeValue.round()} months';
+    } else if (remainingLifeValue != null) {
+      final valueText = remainingLifeValue.toString().trim();
+      remainingLifeText = valueText.toLowerCase().contains('month')
+          ? valueText
+          : '$valueText months';
+    } else {
+      remainingLifeText = 'Unknown';
+    }
+
+    final isHealthy = status.toString().toLowerCase().contains('good') ||
+        status.toString().toLowerCase().contains('healthy');
+    final statusColor = isHealthy ? leaf : const Color(0xFFE64A19);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: statusColor.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isHealthy ? Icons.schedule : Icons.warning_amber_rounded,
+                  color: statusColor,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tyre Health Prediction',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                         color: forest,
                         fontFamily: 'Georgia',
                       ),
