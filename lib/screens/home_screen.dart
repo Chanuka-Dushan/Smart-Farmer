@@ -20,6 +20,7 @@ import 'lifecycle_prediction_screen.dart';
 import 'upload_image_screen.dart';
 import 'favourite_screen.dart';
 import 'tyre_health_screen.dart';
+import 'tyre_inspection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -272,6 +273,14 @@ class _HomeScreenState extends State<HomeScreen> {
                  onTap: () {
                    Navigator.pop(context);
                    Navigator.pushNamed(context, '/find-spare-part');
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.tire_repair),
+                 title: const Text("Tyre Inspection"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const TyreInspectionScreen()));
                  },
                ),
                ListTile(
