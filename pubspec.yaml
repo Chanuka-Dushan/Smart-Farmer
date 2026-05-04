@@ -64,6 +64,7 @@ dependencies:
   record: ^5.2.0  # Audio recording (upgraded for Linux compatibility)
   audioplayers: ^6.0.0  # Audio playback
   path: ^1.9.0  # Path manipulation
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:

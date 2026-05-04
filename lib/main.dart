@@ -44,9 +44,15 @@ import 'screens/favourite_screen.dart';
 import 'screens/accepted_orders_screen.dart';
 import 'screens/my_payments_screen.dart';
 
-import 'package:smart_farmer/screens/inventory_optimization_screen.dart';
-import 'package:smart_farmer/screens/inventory_forecast_screen.dart';
-import 'package:smart_farmer/screens/inventory_recommendation_screen.dart';
+import 'screens/inventory_home_screen.dart';
+import 'screens/inventory_prediction_screen.dart';
+import 'screens/inventory_prediction_result_screen.dart';
+import 'screens/inventory_stock_input_screen.dart';
+import 'screens/inventory_stock_result_screen.dart';
+
+//import 'package:smart_farmer/screens/inventory_optimization_screen.dart';
+//import 'package:smart_farmer/screens/inventory_forecast_screen.dart';
+//import 'package:smart_farmer/screens/inventory_recommendation_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -209,9 +215,15 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
         '/part-details': (context) => PartDetailsScreen(sparePart: {}, uploadedImage: null),
         '/favorites': (context) => const FavoritesScreen(),
 
-        '/inventory-optimization': (context) => InventoryOptimizationScreen(),
-        '/inventory-forecast': (context) => InventoryForecastScreen(),
-        '/inventory-recommendations': (context) => InventoryRecommendationScreen(),
+        '/inventory-optimization': (context) => const InventoryHomeScreen(),
+        '/inventory-prediction': (context) => const InventoryPredictionScreen(),
+        '/inventory-prediction-result': (context) => const InventoryPredictionResultScreen(),
+        '/inventory-stock-input': (context) => const InventoryStockInputScreen(),
+        '/inventory-stock-result': (context) => const InventoryStockResultScreen(),
+
+        //'/inventory-optimization': (context) => InventoryOptimizationScreen(),
+       // '/inventory-forecast': (context) => InventoryForecastScreen(),
+        //'/inventory-recommendations': (context) => InventoryRecommendationScreen(),
 
         // Seller / profile routes
         '/seller-onboarding': (context) => const SellerOnboardingScreen(),

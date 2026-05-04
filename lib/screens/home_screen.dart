@@ -527,53 +527,53 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.document_scanner_rounded,
                 color: Colors.blue.withOpacity(0.1),
                 iconColor: Colors.blue,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SparePartScanScreen())),
-              ),
-              _buildAnimatedCard(
-                index: 3,
-                child: _buildFeatureCard(
+                onTap: () => Navigator.push(
                   context,
-                  title: context.tr('find_suppliers'),
-                  subtitle: context.tr('locate_verified_sellers'),
-                  icon: Icons.map_rounded,
-                  color: Colors.green.withOpacity(0.1),
-                  iconColor: Colors.green,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SupplierScreen(),
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (context) => const SparePartScanScreen()),
                 ),
               ),
-              _buildAnimatedCard(
-                index: 4,
-                child: _buildFeatureCard(
-                  context,
-                  title: "My Reservations",
-                  subtitle: "View secure blockchain contracts",
-                  icon: Icons.vpn_key_rounded,
-                  color: Colors.purple.withOpacity(0.1),
-                  iconColor: Colors.purple,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          context.l10n.tr('blockchain_coming_soon'),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+            ),
 
-              
+            _buildAnimatedCard(
+              index: 3,
+              child: _buildFeatureCard(
+                context,
+                title: context.tr('find_suppliers'),
+                subtitle: context.tr('locate_verified_sellers'),
+                icon: Icons.map_rounded,
+                color: Colors.green.withOpacity(0.1),
+                iconColor: Colors.green,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SupplierScreen()),
+                ),
+              ),
+            ),
+
+            _buildAnimatedCard(
+              index: 4,
+              child: _buildFeatureCard(
+                context,
+                title: "My Reservations",
+                subtitle: "View secure blockchain contracts",
+                icon: Icons.vpn_key_rounded,
+                color: Colors.purple.withOpacity(0.1),
+                iconColor: Colors.purple,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.tr('blockchain_coming_soon'))),
+                  );
+                },
+              ),
+            ),
+
             const SizedBox(height: 20),
             const Text(
               "Smart Recommendation System",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
+
             _buildFeatureCard(
               context,
               title: "NLP Spare Part Search",
@@ -588,11 +588,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+
             _buildFeatureCard(
               context,
               title: "Dynamic Compatibility Recommender",
-              subtitle:
-                  "Find alternative compatible parts when original stock is unavailable",
+              subtitle: "Find alternative compatible parts when original stock is unavailable",
               icon: Icons.sync_alt,
               color: Colors.teal.shade100,
               iconColor: Colors.teal,
@@ -600,6 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pushNamed(context, '/compatibility');
               },
             ),
+
             _buildFeatureCard(
               context,
               title: "Inventory Optimization",
@@ -609,11 +610,9 @@ class _HomeScreenState extends State<HomeScreen> {
               iconColor: Colors.lime.shade800,
               onTap: () {
                 Navigator.pushNamed(context, '/inventory-optimization');
-            },
+              },
             ),
-
-            ),
-            ], // Close the conditional for farmer features
+          ],
 
              // ================= Identification Section =================
           const SizedBox(height: 20),
