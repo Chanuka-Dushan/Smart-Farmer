@@ -61,16 +61,37 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
 
     _fadeController.forward();
     _slideController.forward();
-    
+
     // Predict tyre life
     _predictTyreLife();
   }
 
   Future<void> _predictTyreLife() async {
     try {
+      // Prefer detection payload values (rul_months/severity_label/message)
+      // to avoid inconsistent defaults from a secondary endpoint.
+      final directRul = widget.detectionResult['rul_months'] ??
+          widget.detectionResult['rul'];
+      final directSeverityLabel =
+          widget.detectionResult['severity_label']?.toString();
+      final directMessage = widget.detectionResult['message']?.toString();
+      if (directRul != null) {
+        setState(() {
+          _lifePredictor = {
+            'remaining_life_months': directRul,
+            'status': directSeverityLabel ?? 'Prediction Available',
+            'recommendations': directMessage == null || directMessage.isEmpty
+                ? <String>[]
+                : <String>[directMessage],
+          };
+          _predictionLoading = false;
+        });
+        return;
+      }
+
       final primaryDamage =
           widget.detectionResult['primary_damage'] as Map<String, dynamic>?;
-      
+
       if (primaryDamage == null) {
         setState(() {
           _lifePredictor = {
@@ -120,12 +141,15 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
 
   // ── Helpers ────────────────────────────────────────────────
   String _formatDamageType(String type) {
+    if (type.trim().isEmpty) return 'Unknown';
     final formatted = type.replaceAll('_', ' ');
     return formatted[0].toUpperCase() + formatted.substring(1);
   }
 
   String _formatSeverity(String severity) =>
-      severity[0].toUpperCase() + severity.substring(1).toLowerCase();
+      severity.trim().isEmpty
+          ? 'Unknown'
+          : severity[0].toUpperCase() + severity.substring(1).toLowerCase();
 
   Color _severityColor(String severity) {
     switch (severity.toLowerCase()) {
@@ -152,8 +176,35 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
   Widget build(BuildContext context) {
     final detections =
         widget.detectionResult['detections'] as List? ?? [];
-    final primaryDamage =
+    final rawPrimaryDamage =
         widget.detectionResult['primary_damage'] as Map<String, dynamic>?;
+    final severityPercent =
+        (widget.detectionResult['severity_percent'] as num?)?.toDouble();
+    final severityLabel = widget.detectionResult['severity_label']?.toString();
+    Map<String, dynamic>? primaryDamage;
+    if (rawPrimaryDamage != null) {
+      primaryDamage = Map<String, dynamic>.from(rawPrimaryDamage);
+      final currentSeverity =
+          (primaryDamage['severity']?.toString().toLowerCase() ?? 'unknown');
+      if (currentSeverity == 'unknown' && severityLabel != null) {
+        final sl = severityLabel.toLowerCase();
+        if (sl.contains('minor')) {
+          primaryDamage['severity'] = 'minor';
+        } else if (sl.contains('moderate')) {
+          primaryDamage['severity'] = 'moderate';
+        } else if (sl.contains('severe')) {
+          primaryDamage['severity'] = 'severe';
+        }
+      }
+
+      final currentLifespan =
+          (primaryDamage['lifespan_reduction'] as num?)?.toDouble();
+      if (severityPercent != null &&
+          (currentLifespan == null || currentLifespan >= 0.5)) {
+        primaryDamage['lifespan_reduction'] =
+            (severityPercent / 100.0).clamp(0.0, 1.0);
+      }
+    }
     final model =
         widget.detectionResult['model'] as String? ?? 'Unknown';
     final detectionsCount =
@@ -980,7 +1031,7 @@ class _LifePredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final prediction_data = prediction['prediction'] as Map<String, dynamic>? ?? {};
+    final prediction_data = (prediction['prediction'] as Map<String, dynamic>?) ?? prediction;
     final remainingLifeValue = prediction_data['remaining_life_months'];
     final status = prediction_data['status'] ?? 'Unknown';
     final recommendations = prediction_data['recommendations'] as List? ?? [];

@@ -487,12 +487,12 @@ class _HomeScreenState extends State<HomeScreen> {
               index: 2,
               child: _buildFeatureCard(
                 context,
-                title: context.tr('scan_spare_part'),
-                subtitle: context.tr('detect_wear_tear'),
-                icon: Icons.document_scanner_rounded,
-                color: Colors.blue.withOpacity(0.1),
-                iconColor: Colors.blue,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SparePartScanScreen())),
+                title: 'Tyre Inspection',
+                subtitle: 'Scan tyre damage and estimate life',
+                icon: Icons.tire_repair,
+                color: Colors.deepOrange.withOpacity(0.1),
+                iconColor: Colors.deepOrange,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TyreInspectionScreen())),
               ),
             ),
 
@@ -644,7 +644,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const SparePartScanScreen()))
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const TyreInspectionScreen()))
                 .then((_) => setState(() => _selectedIndex = 0));
           } else if (index == 2) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()))
