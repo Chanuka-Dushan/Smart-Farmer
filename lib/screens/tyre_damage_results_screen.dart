@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../services/api_service.dart';
-import 'tyre_voice_chat_realtime_screen.dart';
-import 'tyre_text_chat_screen.dart';
 
 class TyreDamageResultsScreen extends StatefulWidget {
   final Map<String, dynamic> detectionResult;
@@ -28,6 +26,13 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
   late AnimationController _slideController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+
+  // Tyre life prediction
+  Map<String, dynamic>? _lifePredictor;
+  bool _predictionLoading = true;
+  String? _predictionError;
+
+  final ApiService _api = ApiService();
 
   // ── Design tokens ──────────────────────────────────────────
   static const _forest = Color(0xFF0F3D1F);
@@ -56,6 +61,69 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
 
     _fadeController.forward();
     _slideController.forward();
+
+    // Predict tyre life
+    _predictTyreLife();
+  }
+
+  Future<void> _predictTyreLife() async {
+    try {
+      // Prefer detection payload values (rul_months/severity_label/message)
+      // to avoid inconsistent defaults from a secondary endpoint.
+      final directRul = widget.detectionResult['rul_months'] ??
+          widget.detectionResult['rul'];
+      final directSeverityLabel =
+          widget.detectionResult['severity_label']?.toString();
+      final directMessage = widget.detectionResult['message']?.toString();
+      if (directRul != null) {
+        setState(() {
+          _lifePredictor = {
+            'remaining_life_months': directRul,
+            'status': directSeverityLabel ?? 'Prediction Available',
+            'recommendations': directMessage == null || directMessage.isEmpty
+                ? <String>[]
+                : <String>[directMessage],
+          };
+          _predictionLoading = false;
+        });
+        return;
+      }
+
+      final primaryDamage =
+          widget.detectionResult['primary_damage'] as Map<String, dynamic>?;
+
+      if (primaryDamage == null) {
+        setState(() {
+          _lifePredictor = {
+            'remaining_life_months': 30,
+            'status': 'Healthy',
+          };
+          _predictionLoading = false;
+        });
+        return;
+      }
+
+      final prediction = await _api.predictTyreLife(
+        damageType: primaryDamage['damage_type'] ?? 'unknown',
+        damageSeverity: primaryDamage['severity'] ?? 'unknown',
+        lifespanReduction: primaryDamage['lifespan_reduction'] ?? 0.0,
+        usageHoursPerWeek: 40.0,
+        monthsUsed: 12.0,
+        confidence: primaryDamage['confidence'] ?? 0.8,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _lifePredictor = prediction;
+        _predictionLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _predictionError = e.toString();
+        _predictionLoading = false;
+      });
+    }
   }
 
   @override
@@ -73,12 +141,15 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
 
   // ── Helpers ────────────────────────────────────────────────
   String _formatDamageType(String type) {
+    if (type.trim().isEmpty) return 'Unknown';
     final formatted = type.replaceAll('_', ' ');
     return formatted[0].toUpperCase() + formatted.substring(1);
   }
 
   String _formatSeverity(String severity) =>
-      severity[0].toUpperCase() + severity.substring(1).toLowerCase();
+      severity.trim().isEmpty
+          ? 'Unknown'
+          : severity[0].toUpperCase() + severity.substring(1).toLowerCase();
 
   Color _severityColor(String severity) {
     switch (severity.toLowerCase()) {
@@ -105,8 +176,35 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
   Widget build(BuildContext context) {
     final detections =
         widget.detectionResult['detections'] as List? ?? [];
-    final primaryDamage =
+    final rawPrimaryDamage =
         widget.detectionResult['primary_damage'] as Map<String, dynamic>?;
+    final severityPercent =
+        (widget.detectionResult['severity_percent'] as num?)?.toDouble();
+    final severityLabel = widget.detectionResult['severity_label']?.toString();
+    Map<String, dynamic>? primaryDamage;
+    if (rawPrimaryDamage != null) {
+      primaryDamage = Map<String, dynamic>.from(rawPrimaryDamage);
+      final currentSeverity =
+          (primaryDamage['severity']?.toString().toLowerCase() ?? 'unknown');
+      if (currentSeverity == 'unknown' && severityLabel != null) {
+        final sl = severityLabel.toLowerCase();
+        if (sl.contains('minor')) {
+          primaryDamage['severity'] = 'minor';
+        } else if (sl.contains('moderate')) {
+          primaryDamage['severity'] = 'moderate';
+        } else if (sl.contains('severe')) {
+          primaryDamage['severity'] = 'severe';
+        }
+      }
+
+      final currentLifespan =
+          (primaryDamage['lifespan_reduction'] as num?)?.toDouble();
+      if (severityPercent != null &&
+          (currentLifespan == null || currentLifespan >= 0.5)) {
+        primaryDamage['lifespan_reduction'] =
+            (severityPercent / 100.0).clamp(0.0, 1.0);
+      }
+    }
     final model =
         widget.detectionResult['model'] as String? ?? 'Unknown';
     final detectionsCount =
@@ -205,17 +303,34 @@ class _TyreDamageResultsScreenState extends State<TyreDamageResultsScreen>
 
                       const SizedBox(height: 20),
 
-                      // CTA Buttons
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _ChatButtons(
-                          primaryDamage: primaryDamage,
-                          forest: _forest,
-                          forestMid: _forestMid,
-                          leaf: _leaf,
-                          cream: _cream,
+                      // Tyre Life Prediction Card
+                      if (_predictionLoading)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: _leaf.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _leaf.withOpacity(0.3)),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                        )
+                      else if (_predictionError == null && _lifePredictor != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _LifePredictionCard(
+                            prediction: _lifePredictor!,
+                            forest: _forest,
+                            leaf: _leaf,
+                            charcoal: _charcoal,
+                            warmWhite: _warmWhite,
+                            muted: _muted,
+                          ),
                         ),
-                      ),
                     ],
 
                     // All detections
@@ -710,196 +825,6 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _ChatButtons extends StatelessWidget {
-  final Map<String, dynamic> primaryDamage;
-  final Color forest, forestMid, leaf, cream;
-
-  const _ChatButtons({
-    required this.primaryDamage,
-    required this.forest,
-    required this.forestMid,
-    required this.leaf,
-    required this.cream,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Voice chat — primary
-        _GradientButton(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => TyreVoiceChatRealtimeScreen(
-                  damageInfo: primaryDamage),
-            ),
-          ),
-          gradient: LinearGradient(
-            colors: [forest, forestMid],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          icon: Icons.mic_rounded,
-          label: 'හඬ සංවාදය',
-          sublabel: 'Voice Chat',
-          shadow: forest.withOpacity(0.35),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Text chat — secondary
-        _OutlineButton(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => TyreTextChatScreen(damageInfo: primaryDamage),
-            ),
-          ),
-          icon: Icons.chat_bubble_outline_rounded,
-          label: 'මුකුත කථාවක්',
-          sublabel: 'Text Chat',
-          forest: forest,
-          leaf: leaf,
-        ),
-      ],
-    );
-  }
-}
-
-class _GradientButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final Gradient gradient;
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final Color shadow;
-
-  const _GradientButton({
-    required this.onTap,
-    required this.gradient,
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.shadow,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: shadow, blurRadius: 16, offset: const Offset(0, 6)),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Georgia')),
-                Text(sublabel,
-                    style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 11)),
-              ],
-            ),
-            const Spacer(),
-            Icon(Icons.arrow_forward_ios_rounded,
-                color: Colors.white.withOpacity(0.6), size: 14),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OutlineButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final Color forest, leaf;
-
-  const _OutlineButton({
-    required this.onTap,
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.forest,
-    required this.leaf,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFDFAF5),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: forest.withOpacity(0.25), width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: forest.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: forest, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(
-                        color: forest,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Georgia')),
-                Text(sublabel,
-                    style: TextStyle(color: forest.withOpacity(0.5), fontSize: 11)),
-              ],
-            ),
-            const Spacer(),
-            Icon(Icons.arrow_forward_ios_rounded,
-                color: forest.withOpacity(0.4), size: 14),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _AllDetectionsSection extends StatelessWidget {
   final List detections;
   final Color forest, charcoal, muted, warmWhite;
@@ -1085,6 +1010,196 @@ class _ModelBadge extends StatelessWidget {
               letterSpacing: 0.3,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LifePredictionCard extends StatelessWidget {
+  final Map<String, dynamic> prediction;
+  final Color forest, leaf, charcoal, warmWhite, muted;
+
+  const _LifePredictionCard({
+    required this.prediction,
+    required this.forest,
+    required this.leaf,
+    required this.charcoal,
+    required this.warmWhite,
+    required this.muted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final prediction_data = (prediction['prediction'] as Map<String, dynamic>?) ?? prediction;
+    final remainingLifeValue = prediction_data['remaining_life_months'];
+    final status = prediction_data['status'] ?? 'Unknown';
+    final recommendations = prediction_data['recommendations'] as List? ?? [];
+
+    String remainingLifeText;
+    if (remainingLifeValue is num) {
+      remainingLifeText = '${remainingLifeValue.round()} months';
+    } else if (remainingLifeValue != null) {
+      final valueText = remainingLifeValue.toString().trim();
+      remainingLifeText = valueText.toLowerCase().contains('month')
+          ? valueText
+          : '$valueText months';
+    } else {
+      remainingLifeText = 'Unknown';
+    }
+
+    final isHealthy = status.toString().toLowerCase().contains('good') ||
+        status.toString().toLowerCase().contains('healthy');
+    final statusColor = isHealthy ? leaf : const Color(0xFFE64A19);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: statusColor.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isHealthy ? Icons.schedule : Icons.warning_amber_rounded,
+                  color: statusColor,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tyre Health Prediction',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: forest,
+                        fontFamily: 'Georgia',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      status.toString(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Life prediction
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: warmWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: forest.withOpacity(0.1)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Remaining Life',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: muted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      remainingLifeText,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: forest,
+                        fontFamily: 'Georgia',
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: leaf.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.hourglass_bottom, color: leaf, size: 28),
+                ),
+              ],
+            ),
+          ),
+
+          // Recommendations
+          if (recommendations.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Recommendations',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: forest,
+                fontFamily: 'Georgia',
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...recommendations.take(3).map((rec) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        color: leaf,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        rec.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: charcoal.withOpacity(0.8),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
         ],
       ),
     );

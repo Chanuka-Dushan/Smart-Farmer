@@ -20,6 +20,7 @@ import 'lifecycle_prediction_screen.dart';
 import 'upload_image_screen.dart';
 import 'favourite_screen.dart';
 import 'tyre_health_screen.dart';
+import 'tyre_inspection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -297,6 +298,14 @@ class _HomeScreenState extends State<HomeScreen> {
                  },
                ),
                ListTile(
+                 leading: const Icon(Icons.tire_repair),
+                 title: const Text("Tyre Inspection"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const TyreInspectionScreen()));
+                 },
+               ),
+               ListTile(
                  leading: const Icon(Icons.history_rounded),
                  title: const Text("My Requests"),
                  onTap: () {
@@ -522,15 +531,12 @@ class _HomeScreenState extends State<HomeScreen> {
               index: 2,
               child: _buildFeatureCard(
                 context,
-                title: context.tr('scan_spare_part'),
-                subtitle: context.tr('detect_wear_tear'),
-                icon: Icons.document_scanner_rounded,
-                color: Colors.blue.withOpacity(0.1),
-                iconColor: Colors.blue,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SparePartScanScreen()),
-                ),
+                title: 'Tyre Inspection',
+                subtitle: 'Scan tyre damage and estimate life',
+                icon: Icons.tire_repair,
+                color: Colors.deepOrange.withOpacity(0.1),
+                iconColor: Colors.deepOrange,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TyreInspectionScreen())),
               ),
             ),
 
@@ -681,12 +687,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SparePartScanScreen(),
-              ),
-            ).then((_) => setState(() => _selectedIndex = 0));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const TyreInspectionScreen()))
+                .then((_) => setState(() => _selectedIndex = 0));
           } else if (index == 2) {
             Navigator.push(
               context,
