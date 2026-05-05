@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'predict_screen.dart';
 import 'scan_screen.dart';
 import 'supplier_screen.dart';
 import 'profile_screen.dart';
@@ -18,7 +17,10 @@ import 'nlp_search_screen.dart';
 import 'compatibility_screen.dart';
 import 'inventory_optimization_screen.dart';
 import 'lifecycle_prediction_screen.dart';
-import 'lifecycle_prediction_screen.dart';
+import 'upload_image_screen.dart';
+import 'favourite_screen.dart';
+import 'tyre_health_screen.dart';
+import 'tyre_inspection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -237,21 +239,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   accountEmail: Text(email),
                   currentAccountPicture: CircleAvatar(
                     backgroundColor: Colors.white,
-                    backgroundImage: picUrl != null && picUrl.isNotEmpty
-                        ? NetworkImage(
+                    child: picUrl != null && picUrl.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
                             picUrl,
-                            headers: {
-                              'Cache-Control': 'no-cache',
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                            headers: const {'Cache-Control': 'no-cache'},
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32));
                             },
-                          ) as ImageProvider
-                        : null,
-                    child: picUrl == null || picUrl.isEmpty
-                        ? const Icon(
-                            Icons.person,
-                            size: 40,
-                            color: Color(0xFF2E7D32),
-                          )
-                        : null,
+                          ),
+                        )
+                      : const Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)),
                   ),
                   decoration: const BoxDecoration(color: Color(0xFF2E7D32)),
                 );
@@ -271,31 +272,55 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             if (Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
-              ListTile(
-                leading: const Icon(Icons.list_alt_rounded),
-                title: const Text("Spare Part Requests"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/seller-spare-part-requests');
-                },
-              ),
+               ListTile(
+                 leading: const Icon(Icons.list_alt_rounded),
+                 title: const Text("Spare Part Requests"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/seller-spare-part-requests');
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.business_center),
+                 title: const Text("My Offerings"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/my-offerings');
+                 },
+               ),
             ] else ...[
-              ListTile(
-                leading: const Icon(Icons.search_rounded),
-                title: const Text("Find a Spare Part"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/find-spare-part');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.history_rounded),
-                title: const Text("My Requests"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/my-spare-part-requests');
-                },
-              ),
+               ListTile(
+                 leading: const Icon(Icons.search_rounded),
+                 title: const Text("Find a Spare Part"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/find-spare-part');
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.tire_repair),
+                 title: const Text("Tyre Inspection"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const TyreInspectionScreen()));
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.history_rounded),
+                 title: const Text("My Requests"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/my-spare-part-requests');
+                 },
+               ),
+               ListTile(
+                 leading: const Icon(Icons.payment_rounded),
+                 title: const Text("Transaction History"),
+                 onTap: () {
+                   Navigator.pop(context);
+                   Navigator.pushNamed(context, '/transaction-history');
+                 },
+               ),
             ],
             const Divider(),
             ListTile(
@@ -502,101 +527,59 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
             ],
             if (!Provider.of<AuthProvider>(context, listen: false).isSeller) ...[
-              _buildAnimatedCard(
-                index: 1,
-                child: _buildFeatureCard(
+            _buildAnimatedCard(
+              index: 2,
+              child: _buildFeatureCard(
+                context,
+                title: 'Tyre Inspection',
+                subtitle: 'Scan tyre damage and estimate life',
+                icon: Icons.tire_repair,
+                color: Colors.deepOrange.withOpacity(0.1),
+                iconColor: Colors.deepOrange,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TyreInspectionScreen())),
+              ),
+            ),
+
+            _buildAnimatedCard(
+              index: 3,
+              child: _buildFeatureCard(
+                context,
+                title: context.tr('find_suppliers'),
+                subtitle: context.tr('locate_verified_sellers'),
+                icon: Icons.map_rounded,
+                color: Colors.green.withOpacity(0.1),
+                iconColor: Colors.green,
+                onTap: () => Navigator.push(
                   context,
-                  title: context.tr('lifespan_forecast'),
-                  subtitle: context.tr('check_remaining_hours'),
-                  icon: Icons.auto_graph_rounded,
-                  color: Colors.orange.withOpacity(0.1),
-                  iconColor: Colors.orange,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PredictScreen(),
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (context) => const SupplierScreen()),
                 ),
               ),
-              _buildAnimatedCard(
-                index: 2,
-                child: _buildFeatureCard(
-                  context,
-                  title: context.tr('scan_spare_part'),
-                  subtitle: context.tr('detect_wear_tear'),
-                  icon: Icons.document_scanner_rounded,
-                  color: Colors.blue.withOpacity(0.1),
-                  iconColor: Colors.blue,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LifecyclePredictionScreen(),
-                    ),
-                  ),
-                ),
+            ),
+
+            _buildAnimatedCard(
+              index: 4,
+              child: _buildFeatureCard(
+                context,
+                title: "My Reservations",
+                subtitle: "View secure blockchain contracts",
+                icon: Icons.vpn_key_rounded,
+                color: Colors.purple.withOpacity(0.1),
+                iconColor: Colors.purple,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.tr('blockchain_coming_soon'))),
+                  );
+                },
               ),
-              _buildAnimatedCard(
-                index: 3,
-                child: _buildFeatureCard(
-                  context,
-                  title: context.tr('find_suppliers'),
-                  subtitle: context.tr('locate_verified_sellers'),
-                  icon: Icons.map_rounded,
-                  color: Colors.green.withOpacity(0.1),
-                  iconColor: Colors.green,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SupplierScreen(),
-                    ),
-                  ),
-                ),
-              ),
-              _buildAnimatedCard(
-                index: 4,
-                child: _buildFeatureCard(
-                  context,
-                  title: "My Reservations",
-                  subtitle: "View secure blockchain contracts",
-                  icon: Icons.vpn_key_rounded,
-                  color: Colors.purple.withOpacity(0.1),
-                  iconColor: Colors.purple,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          context.l10n.tr('blockchain_coming_soon'),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              _buildAnimatedCard(
-                index: 5,
-                child: _buildFeatureCard(
-                  context,
-                  title: context.tr('spare_part_analysis'),
-                  subtitle: context.tr('analyze_part_lifecycle'),
-                  icon: Icons.analytics_rounded,
-                  color: Colors.teal.withOpacity(0.1),
-                  iconColor: Colors.teal,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LifecyclePredictionScreen(),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
+
             const SizedBox(height: 20),
             const Text(
               "Smart Recommendation System",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
+
             _buildFeatureCard(
               context,
               title: "NLP Spare Part Search",
@@ -611,11 +594,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+
             _buildFeatureCard(
               context,
               title: "Dynamic Compatibility Recommender",
-              subtitle:
-                  "Find alternative compatible parts when original stock is unavailable",
+              subtitle: "Find alternative compatible parts when original stock is unavailable",
               icon: Icons.sync_alt,
               color: Colors.teal.shade100,
               iconColor: Colors.teal,
@@ -623,6 +606,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pushNamed(context, '/compatibility');
               },
             ),
+
             _buildFeatureCard(
               context,
               title: "Inventory Optimization",
@@ -632,8 +616,66 @@ class _HomeScreenState extends State<HomeScreen> {
               iconColor: Colors.lime.shade800,
               onTap: () {
                 Navigator.pushNamed(context, '/inventory-optimization');
-            },
+              },
             ),
+          ],
+
+             // ================= Identification Section =================
+          const SizedBox(height: 20),
+          const Text(
+            "Identification",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+
+          _buildFeatureCard(
+            context,
+            title: "My Favorites",
+            subtitle: "View saved spare parts",
+            icon: Icons.favorite,
+            color: Colors.red.shade100,
+            iconColor: Colors.red,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+              );
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Upload Spare Part Image",
+            subtitle: "Identify and analyze parts",
+            icon: Icons.upload_rounded,
+            color: Colors.blue.shade100,
+            iconColor: Colors.blue.shade700,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UploadImageScreen()),
+              );
+            },
+          ),
+
+          
+
+          _buildFeatureCard(
+            context,
+            title: "Tyre Health Check",
+            subtitle: "AI-powered tyre damage detection",
+            icon: Icons.tire_repair,
+            color: Colors.deepOrange.shade100,
+            iconColor: Colors.deepOrange,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TyreHealthScreen()),
+              );
+            },
+          ),
+          
+
           ],
         ),
       ),
@@ -645,12 +687,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() => _selectedIndex = index);
           if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SparePartScanScreen(),
-              ),
-            ).then((_) => setState(() => _selectedIndex = 0));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const TyreInspectionScreen()))
+                .then((_) => setState(() => _selectedIndex = 0));
           } else if (index == 2) {
             Navigator.push(
               context,

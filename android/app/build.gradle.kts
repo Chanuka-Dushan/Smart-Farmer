@@ -21,6 +21,8 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
+        apiVersion = "2.0"
+        languageVersion = "2.0"
     }
 
     defaultConfig {
@@ -49,4 +51,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    // Material Components for Stripe payment sheet
+    implementation("com.google.android.material:material:1.11.0")
 }

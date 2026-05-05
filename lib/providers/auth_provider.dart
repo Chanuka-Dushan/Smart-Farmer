@@ -3,7 +3,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../models/seller_model.dart';
 import '../services/api_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -47,6 +46,36 @@ class AuthProvider with ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+  
+  /// Clear image cache for profile pictures
+  void _clearProfileImageCache() {
+    try {
+      final userPicUrl = _user?.profilePictureUrl;
+      if (userPicUrl != null && userPicUrl.isNotEmpty) {
+        try {
+          final imageProvider = NetworkImage(userPicUrl);
+          imageProvider.evict();
+        } catch (e) {
+          // If eviction fails, continue to clear entire cache
+        }
+      }
+      final sellerLogoUrl = _seller?.logoUrl;
+      if (sellerLogoUrl != null && sellerLogoUrl.isNotEmpty) {
+        try {
+          final imageProvider = NetworkImage(sellerLogoUrl);
+          imageProvider.evict();
+        } catch (e) {
+          // If eviction fails, continue to clear entire cache
+        }
+      }
+      // Clear entire image cache to ensure profile pictures are refreshed
+      imageCache.clear();
+      imageCache.clearLiveImages();
+    } catch (e) {
+      // Ignore cache clearing errors
+      print('Warning: Failed to clear image cache: $e');
+    }
   }
 
   /// Register new user
@@ -176,6 +205,19 @@ class AuthProvider with ChangeNotifier {
       
       _isAuthenticated = true;
       _isLoading = false;
+      
+      // Refresh profile to get latest data including profile picture
+      try {
+        if (_userType == 'user') {
+          _user = await _apiService.getProfile();
+        } else if (_userType == 'seller') {
+          _seller = await _apiService.getSellerProfile();
+        }
+      } catch (e) {
+        // If refresh fails, continue with existing data
+        print('Warning: Failed to refresh profile after login: $e');
+      }
+      
       notifyListeners();
       return true;
     } catch (e) {
@@ -207,6 +249,15 @@ class AuthProvider with ChangeNotifier {
       _userType = 'seller';
       _isAuthenticated = true;
       _isLoading = false;
+      
+      // Refresh profile to get latest data including logo
+      try {
+        _seller = await _apiService.getSellerProfile();
+      } catch (e) {
+        // If refresh fails, continue with existing data
+        print('Warning: Failed to refresh seller profile after login: $e');
+      }
+      
       notifyListeners();
       return true;
     } catch (e) {
@@ -294,6 +345,21 @@ class AuthProvider with ChangeNotifier {
 
         _isAuthenticated = true;
         _isLoading = false;
+        
+        // Refresh profile to get latest data including profile picture
+        try {
+          if (_userType == 'user') {
+            _user = await _apiService.getProfile();
+          } else if (_userType == 'seller') {
+            _seller = await _apiService.getSellerProfile();
+          }
+          // Clear image cache to ensure new profile picture is displayed
+          _clearProfileImageCache();
+        } catch (e) {
+          // If refresh fails, continue with existing data
+          print('Warning: Failed to refresh profile after social login: $e');
+        }
+        
         notifyListeners();
         return true;
       }
@@ -309,6 +375,9 @@ class AuthProvider with ChangeNotifier {
 
   /// Logout user
   Future<void> logout() async {
+    // Clear image cache before logout
+    _clearProfileImageCache();
+    
     await _apiService.logout();
     _user = null;
     _seller = null;
@@ -547,15 +616,64 @@ class AuthProvider with ChangeNotifier {
       // Upload image to server and get URL
       final imageUrl = await _apiService.uploadProfilePicture(imagePath);
       
-      // Refresh profile from server to get updated data
-      if (_userType == 'user') {
-        _user = await _apiService.getProfile();
-      } else if (_userType == 'seller') {
-        _seller = await _apiService.getSellerProfile();
+      // Update the profile picture URL immediately
+      if (_userType == 'user' && _user != null) {
+        // Create updated user with new profile picture URL
+        _user = User(
+          id: _user!.id,
+          firstname: _user!.firstname,
+          lastname: _user!.lastname,
+          email: _user!.email,
+          phoneNumber: _user!.phoneNumber,
+          address: _user!.address,
+          profilePictureUrl: imageUrl,
+          isSocialLogin: _user!.isSocialLogin,
+          isBanned: _user!.isBanned,
+          isDeleted: _user!.isDeleted,
+          createdAt: _user!.createdAt,
+          updatedAt: DateTime.now(),
+        );
+      } else if (_userType == 'seller' && _seller != null) {
+        // Create updated seller with new logo URL
+        _seller = Seller(
+          id: _seller!.id,
+          businessName: _seller!.businessName,
+          ownerFirstname: _seller!.ownerFirstname,
+          ownerLastname: _seller!.ownerLastname,
+          email: _seller!.email,
+          phoneNumber: _seller!.phoneNumber,
+          businessAddress: _seller!.businessAddress,
+          businessDescription: _seller!.businessDescription,
+          logoUrl: imageUrl,
+          latitude: _seller!.latitude,
+          longitude: _seller!.longitude,
+          shopLocationName: _seller!.shopLocationName,
+          isVerified: _seller!.isVerified,
+          isActive: _seller!.isActive,
+          onboardingCompleted: _seller!.onboardingCompleted,
+          createdAt: _seller!.createdAt,
+          updatedAt: DateTime.now(),
+        );
       }
       
+      // Notify listeners immediately to update UI
       _isLoading = false;
       notifyListeners();
+      
+      // Then refresh profile from server in background to ensure sync
+      try {
+        if (_userType == 'user') {
+          _user = await _apiService.getProfile();
+        } else if (_userType == 'seller') {
+          _seller = await _apiService.getSellerProfile();
+        }
+        // Notify again after server refresh
+        notifyListeners();
+      } catch (e) {
+        // If background refresh fails, continue with local update
+        print('Warning: Failed to refresh profile after upload: $e');
+      }
+      
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -593,6 +711,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Delete account using correct endpoint
       await _apiService.deleteAccount();
       _user = null;
       _seller = null;
