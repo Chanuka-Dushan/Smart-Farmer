@@ -658,6 +658,131 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
+
+                    _buildFeatureCard(
+            context,
+            title: "Register Spare Part",
+            subtitle: "Register a part on blockchain",
+            icon: Icons.app_registration,
+            color: Colors.orange.shade100,
+            iconColor: Colors.orange,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-register');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Blockchain Parts",
+            subtitle: "Register metadata parts on blockchain",
+            icon: Icons.account_tree,
+            color: Colors.indigo.shade100,
+            iconColor: Colors.indigo,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-parts');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Request Ownership",
+            subtitle: "Browse blockchain parts and request transfer",
+            icon: Icons.swap_horizontal_circle_outlined,
+            color: Colors.cyan.shade100,
+            iconColor: Colors.cyan.shade700,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-marketplace');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Pending Transfers",
+            subtitle: "Approve ownership requests",
+            icon: Icons.assignment_turned_in_outlined,
+            color: Colors.amber.shade100,
+            iconColor: Colors.amber.shade800,
+            onTap: () {
+              Navigator.pushNamed(context, '/seller-pending-transfers');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Verify Spare Part",
+            subtitle: "Scan QR to verify authenticity",
+            icon: Icons.qr_code_scanner,
+            color: Colors.green.shade100,
+            iconColor: Colors.green,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-verify');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Transfer Ownership",
+            subtitle: "Transfer spare part ownership",
+            icon: Icons.swap_horiz,
+            color: Colors.blue.shade100,
+            iconColor: Colors.blue,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-transfer');
+            },
+          ),
+
+          // ================= Smart Recommendation System =================
+          const SizedBox(height: 20),
+          const Text(
+            "Smart Recommendation System",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+
+          _buildFeatureCard(
+            context,
+            title: "NLP Spare Part Search",
+            subtitle: "Search parts using natural language",
+            icon: Icons.search,
+            color: Colors.green.shade100,
+            iconColor: Colors.green,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NlpSearchScreen()),
+              );
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Compatibility Recommender",
+            subtitle: "Find alternative compatible parts",
+            icon: Icons.sync_alt,
+            color: Colors.teal.shade100,
+            iconColor: Colors.teal,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CompatibilityScreen()),
+              );
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Inventory Optimization",
+            subtitle: "Predict demand & optimize stock",
+            icon: Icons.inventory_2,
+            color: Colors.lime.shade100,
+            iconColor: Colors.lime.shade800,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => InventoryOptimizationScreen()),
+              );
+            },
+          ),
           
 
           _buildFeatureCard(

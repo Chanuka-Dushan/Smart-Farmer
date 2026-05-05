@@ -44,6 +44,12 @@ import 'screens/favourite_screen.dart';
 import 'screens/accepted_orders_screen.dart';
 import 'screens/my_payments_screen.dart';
 
+import 'screens/register_part_screen.dart';
+import 'screens/qr_verify_screen.dart';
+import 'screens/transfer_request_screen.dart';
+import 'screens/blockchain_parts_screen.dart';
+import 'screens/blockchain_marketplace_screen.dart';
+import 'screens/seller_pending_transfers_screen.dart';
 import 'screens/inventory_home_screen.dart';
 import 'screens/inventory_prediction_screen.dart';
 import 'screens/inventory_prediction_result_screen.dart';
@@ -214,6 +220,16 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
         '/result': (context) => ResultsScreen(),
         '/part-details': (context) => PartDetailsScreen(sparePart: {}, uploadedImage: null),
         '/favorites': (context) => const FavoritesScreen(),
+
+
+        '/blockchain-register': (context) => RegisterPartScreen(),
+        '/blockchain-parts': (context) => const BlockchainPartsScreen(),
+        '/blockchain-marketplace': (context) => const BlockchainMarketplaceScreen(),
+        '/seller-pending-transfers': (context) => const SellerPendingTransfersScreen(),
+        '/blockchain-verify': (context) => QRVerifyScreen(),
+        '/blockchain-transfer': (context) => TransferRequestScreen(),
+
+
 
         '/inventory-optimization': (context) => const InventoryHomeScreen(),
         '/inventory-prediction': (context) => const InventoryPredictionScreen(),
