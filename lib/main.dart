@@ -48,6 +48,9 @@ import 'screens/my_payments_screen.dart';
 import 'screens/register_part_screen.dart';
 import 'screens/qr_verify_screen.dart';
 import 'screens/transfer_request_screen.dart';
+import 'screens/blockchain_parts_screen.dart';
+import 'screens/blockchain_marketplace_screen.dart';
+import 'screens/seller_pending_transfers_screen.dart';
 
 Future<void> main() async {
   // Ensure Flutter is initialized
@@ -214,6 +217,9 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
 
 
         '/blockchain-register': (context) => RegisterPartScreen(),
+        '/blockchain-parts': (context) => const BlockchainPartsScreen(),
+        '/blockchain-marketplace': (context) => const BlockchainMarketplaceScreen(),
+        '/seller-pending-transfers': (context) => const SellerPendingTransfersScreen(),
         '/blockchain-verify': (context) => QRVerifyScreen(),
         '/blockchain-transfer': (context) => TransferRequestScreen(),
 

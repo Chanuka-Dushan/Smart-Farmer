@@ -571,6 +571,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
           _buildFeatureCard(
             context,
+            title: "Blockchain Parts",
+            subtitle: "Register metadata parts on blockchain",
+            icon: Icons.account_tree,
+            color: Colors.indigo.shade100,
+            iconColor: Colors.indigo,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-parts');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Request Ownership",
+            subtitle: "Browse blockchain parts and request transfer",
+            icon: Icons.swap_horizontal_circle_outlined,
+            color: Colors.cyan.shade100,
+            iconColor: Colors.cyan.shade700,
+            onTap: () {
+              Navigator.pushNamed(context, '/blockchain-marketplace');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
+            title: "Pending Transfers",
+            subtitle: "Approve ownership requests",
+            icon: Icons.assignment_turned_in_outlined,
+            color: Colors.amber.shade100,
+            iconColor: Colors.amber.shade800,
+            onTap: () {
+              Navigator.pushNamed(context, '/seller-pending-transfers');
+            },
+          ),
+
+          _buildFeatureCard(
+            context,
             title: "Verify Spare Part",
             subtitle: "Scan QR to verify authenticity",
             icon: Icons.qr_code_scanner,
