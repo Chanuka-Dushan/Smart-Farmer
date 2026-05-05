@@ -37,6 +37,7 @@ dependencies:
   http: ^1.6.0
   camera: ^0.11.0+2
   image_picker: ^1.1.2
+  image: ^4.0.17
   flutter_dotenv: ^5.2.1
   shared_preferences: ^2.3.4
   provider: ^6.1.2
@@ -67,6 +68,7 @@ dependencies:
   dio: ^5.4.0
   mobile_scanner: ^5.2.3
 
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:

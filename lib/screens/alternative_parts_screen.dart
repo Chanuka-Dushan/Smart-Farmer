@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/recommendation_service.dart';
+import '../models/compatibility_models.dart';
+import '../services/compatibility_service.dart';
 
 class AlternativePartsScreen extends StatelessWidget {
   const AlternativePartsScreen({super.key});
 
-  // ===============================
-  // Score → Tag
-  // ===============================
   String getQualityTag(double score) {
     if (score >= 90) return "BEST";
     if (score >= 75) return "BETTER";
@@ -19,29 +17,10 @@ class AlternativePartsScreen extends StatelessWidget {
     return Colors.blue.shade100;
   }
 
-  // ===============================
-  // RULE 1: Score Threshold
-  // ===============================
-  bool isScoreAcceptable(double score) {
-    return score >= 50; // ❗ Only show >= 50%
-  }
-
-  // ===============================
-  // RULE 2: Name Similarity (Partial Match)
-  // ===============================
-  bool isNameSimilar(String baseName, String altName) {
-    final baseWords =
-        baseName.toLowerCase().split(" ").where((w) => w.length > 2).toList();
-
-    final altLower = altName.toLowerCase();
-
-    // At least ONE meaningful word should match
-    for (final word in baseWords) {
-      if (altLower.contains(word)) {
-        return true;
-      }
-    }
-    return false;
+  Color getScoreColor(double score) {
+    if (score >= 90) return Colors.green;
+    if (score >= 75) return Colors.orange;
+    return Colors.blue;
   }
 
   @override
@@ -49,155 +28,220 @@ class AlternativePartsScreen extends StatelessWidget {
     final args =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
-    final String partName = args["partName"];
-    final int partId = args["partId"];
+    final int partId = args['partId'];
+    final String partName = args['partName'];
+    final String machineModel = args['machineModel'];
+
+    const themeGreen = Color(0xFF2E7D32);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Alternative Parts"),
-        backgroundColor: const Color(0xFF2E7D32),
+        title: const Text('Alternative Parts'),
+        backgroundColor: themeGreen,
+        foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ===============================
-            // Page Heading
-            // ===============================
-            Text(
-              'Alternative parts for "$partName"',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      body: FutureBuilder<RecommendationResponse>(
+        future: CompatibilityService.fetchRecommendations(partId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Failed to load recommendations\n${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
+            );
+          }
 
-            const SizedBox(height: 16),
+          if (!snapshot.hasData) {
+            return const Center(child: Text('No recommendation data found.'));
+          }
 
-            // ===============================
-            // Backend Data Loader
-            // ===============================
-            Expanded(
-              child: FutureBuilder<Map<String, dynamic>>(
-                future: RecommendationService.getHybridRecommendations(partId),
-                builder: (context, snapshot) {
-                  // Loading
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+          final response = snapshot.data!;
 
-                  // Error
-                  if (snapshot.hasError) {
-                    return const Center(
-                      child: Text("Failed to load recommendations"),
-                    );
-                  }
+          final filtered = response.recommendations
+              .where((item) => item.score >= 65)
+              .toList()
+            ..sort((a, b) => b.score.compareTo(a.score));
 
-                  final data = snapshot.data!;
-                  final List allAlternatives = data["recommendations"];
-                  final int baseId = data["base_part"]["id"];
-                  final String baseName = data["base_part"]["name"];
+          final top3 = filtered.take(3).toList();
 
-                  // ===============================
-                  // APPLY FRONTEND FILTERS
-                  // ===============================
-                  final List filteredAlternatives =
-                      allAlternatives.where((part) {
-                    final double score =
-                        (part["final_score"] as num).toDouble();
-                    final String altName = part["name"];
+          if (top3.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'No alternative parts found with compatibility score above 65%.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
 
-                    return isScoreAcceptable(score) &&
-                        isNameSimilar(baseName, altName);
-                  }).toList();
-
-                  // No results after filtering
-                  if (filteredAlternatives.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        "No suitable alternatives found\n(score > 50%)",
-                        textAlign: TextAlign.center,
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Original Part',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
                       ),
-                    );
-                  }
-
-                  // ===============================
-                  // List of Alternative Parts
-                  // ===============================
-                  return ListView.builder(
-                    itemCount: filteredAlternatives.length,
-                    itemBuilder: (context, index) {
-                      final part = filteredAlternatives[index];
-                      final double score =
-                          (part["final_score"] as num).toDouble();
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: const Color(0xFF2E7D32),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      partName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Machine Model: $machineModel',
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Showing top ${top3.length} compatible alternatives with score above 65%.',
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              ...top3.map((part) {
+                final score = part.score;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: getScoreColor(score),
                             child: Text(
-                              "${score.toInt()}%",
+                              '${score.toStringAsFixed(0)}%',
                               style: const TextStyle(
                                 color: Colors.white,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
                             ),
                           ),
-
-                          // ===============================
-                          // Part Details + Chip
-                          // ===============================
-                          title: Text(part["name"]),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Brand: ${part["brand"]}"),
-                              const SizedBox(height: 6),
-
-                              Chip(
-                                label: Text(
-                                  getQualityTag(score),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  part.name,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                backgroundColor: getTagColor(score),
+                                const SizedBox(height: 4),
+                                Text('Machine: ${part.machineModel}'),
+                                if (part.brand != null && part.brand!.isNotEmpty)
+                                  Text('Brand: ${part.brand}'),
+                              ],
+                            ),
+                          ),
+                          Chip(
+                            label: Text(
+                              getQualityTag(score),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-
-                          // ===============================
-                          // Compare Button
-                          // ===============================
-                          trailing: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2E7D32),
                             ),
-                            onPressed: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/comparison',
-                                arguments: {
-                                  "baseId": baseId,
-                                  "altId": part["part_id"],
-                                },
-                              );
-                            },
-                            child: const Text(
-                              "Compare",
-                              style: TextStyle(color: Colors.white),
+                            backgroundColor: getTagColor(score),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/comparison',
+                                  arguments: {
+                                    'baseId': response.queryPart.id,
+                                    'altId': part.partId,
+                                    'baseName': response.queryPart.name,
+                                    'altName': part.name,
+                                  },
+                                );
+                              },
+                              icon: const Icon(Icons.compare_arrows),
+                              label: const Text('Compare'),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: themeGreen,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/feedback',
+                                  arguments: {
+                                    'queryPartId': response.queryPart.id,
+                                    'recommendedPartId': part.partId,
+                                    'queryPartName': response.queryPart.name,
+                                    'recommendedPartName': part.name,
+                                  },
+                                );
+                              },
+                              icon: const Icon(Icons.rate_review_outlined),
+                              label: const Text('Feedback'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          );
+        },
       ),
     );
   }

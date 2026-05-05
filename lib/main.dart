@@ -31,14 +31,13 @@ import 'config/app_config.dart';
 
 import 'screens/nlp_search_screen.dart';
 import 'screens/compatibility_screen.dart';
-import 'screens/inventory_optimization_screen.dart';
+
 import 'screens/comparison_screen.dart';
-import 'screens/inventory_details_screen.dart';
-import 'screens/high_demand_parts_screen.dart';
-import 'screens/seasonal_demand_machines_screen.dart';
+
 import 'screens/alternative_parts_screen.dart';
 import 'screens/part_search_result_screen.dart';
 import 'screens/lifecycle_prediction_screen.dart';
+import 'screens/feedback_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/part_details_screen.dart';
 import 'screens/favourite_screen.dart';
@@ -51,17 +50,24 @@ import 'screens/transfer_request_screen.dart';
 import 'screens/blockchain_parts_screen.dart';
 import 'screens/blockchain_marketplace_screen.dart';
 import 'screens/seller_pending_transfers_screen.dart';
+import 'screens/inventory_home_screen.dart';
+import 'screens/inventory_prediction_screen.dart';
+import 'screens/inventory_prediction_result_screen.dart';
+import 'screens/inventory_stock_input_screen.dart';
+import 'screens/inventory_stock_result_screen.dart';
+
+//import 'package:smart_farmer/screens/inventory_optimization_screen.dart';
+//import 'package:smart_farmer/screens/inventory_forecast_screen.dart';
+//import 'package:smart_farmer/screens/inventory_recommendation_screen.dart';
 
 Future<void> main() async {
-  // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize L10n singleton and load language preference
+
   final l10n = L10n();
-  
+
   try {
-    // Load environment variables
     await dotenv.load(fileName: ".env");
+
     
     // Initialize Stripe
     try {
@@ -91,25 +97,22 @@ Future<void> main() async {
     }
     
     // Initialize Firebase
+
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    
-    // Set up background message handler
+
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    
-    // Initialize notification service
+
     await NotificationService.instance.initialize();
-    
-    // Load language preference
+
     await l10n.loadLanguage();
-    
+
     ErrorHandler.logInfo('App initialization completed successfully');
   } catch (e) {
     ErrorHandler.logError('Failed to initialize app', e);
-    // Continue with app startup even if some services fail
   }
-  
+
   runApp(
     MultiProvider(
       providers: [
@@ -181,35 +184,38 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
   @override
   Widget build(BuildContext context) {
     final themeService = Provider.of<ThemeService>(context);
-    
+
     return MaterialApp(
       title: 'Smart Farmer Spare Parts',
       debugShowCheckedModeBanner: false,
       theme: themeService.lightTheme,
       darkTheme: themeService.darkTheme,
       themeMode: themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      // Define Routes for easy navigation
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/language': (context) => const LanguageSelectionScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
         '/home': (context) => HomeScreen(),
-        '/login': (context) => const LoginScreen(),   
+        '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/seller-register': (context) => const SellerRegisterScreen(),
         '/camera': (context) => const CameraScanScreen(),
         '/settings': (context) => const SettingsScreen(),
 
+        // Smart recommendation routes
         '/nlp-search': (context) => NlpSearchScreen(),
         '/part-search-result': (context) => PartSearchResultScreen(),
+        '/compatibility': (context) => const CompatibilityScreen(),
         '/alternative-parts': (context) => AlternativePartsScreen(),
         '/comparison': (context) => ComparisonScreen(),
-        '/compatibility': (context) => CompatibilityScreen(),
-        '/inventory-optimization': (context) => InventoryOptimizationScreen(),
-        '/inventory-details': (context) => InventoryDetailsScreen(),
-        '/high-demand-results': (context) => const HighDemandResultScreen(),
-        '/seasonal-machines': (context) => const SeasonalMachineScreen(),
+        '/feedback': (context) => const FeedbackScreen(),
+
+        // Inventory / prediction routes
+        //'/inventory-optimization': (context) => InventoryOptimizationScreen(),
+        //'/inventory-details': (context) => InventoryDetailsScreen(),
+        //'/high-demand-results': (context) => const HighDemandResultScreen(),
+        //'/seasonal-machines': (context) => const SeasonalMachineScreen(),
         '/lifecycle-prediction': (context) => const LifecyclePredictionScreen(),
         '/result': (context) => ResultsScreen(),
         '/part-details': (context) => PartDetailsScreen(sparePart: {}, uploadedImage: null),
@@ -225,10 +231,22 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
 
 
 
+        '/inventory-optimization': (context) => const InventoryHomeScreen(),
+        '/inventory-prediction': (context) => const InventoryPredictionScreen(),
+        '/inventory-prediction-result': (context) => const InventoryPredictionResultScreen(),
+        '/inventory-stock-input': (context) => const InventoryStockInputScreen(),
+        '/inventory-stock-result': (context) => const InventoryStockResultScreen(),
+
+        //'/inventory-optimization': (context) => InventoryOptimizationScreen(),
+       // '/inventory-forecast': (context) => InventoryForecastScreen(),
+        //'/inventory-recommendations': (context) => InventoryRecommendationScreen(),
+
+        // Seller / profile routes
         '/seller-onboarding': (context) => const SellerOnboardingScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/find-spare-part': (context) => const SparePartRequestScreen(),
         '/my-spare-part-requests': (context) => const MySparePartRequestsScreen(),
+
         '/seller-spare-part-requests': (context) => const SellerSparePartRequestsScreen(),
         '/my-offerings': (context) => const MyOfferingsScreen(),
         '/accepted-order': (context) {
@@ -244,8 +262,8 @@ class _SmartSparePartAppState extends State<SmartSparePartApp> with WidgetsBindi
           );
         },
         '/transaction-history': (context) => const MyPaymentsScreen(),
+
       },
     );
   }
 }
-
